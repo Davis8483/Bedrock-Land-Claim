@@ -15,6 +15,10 @@ function saveDb() {
     world.setDynamicProperty("db", JSON.stringify(database));
 };
 
+function sendNotification(player: Player, langEntry: String) {
+    player.runCommandAsync(`tellraw @s {"rawtext":[{"translate":"chat.prefix"}, {"text":" "}, {"translate":"${langEntry}"}]}`);
+}
+
 function createClaim(player: Player, start: [x: number, y: number, z: number], end: [x: number, y: number, z: number]) {
     var claims: {} = database[player.name]["claims"];
 
@@ -30,10 +34,16 @@ function createClaim(player: Player, start: [x: number, y: number, z: number], e
 
             var name = response.formValues[0].toString();
             var hasPublicAccess = response.formValues[1];
-            if (name in claims) {
-                player.runCommandAsync(`tellraw @s {"rawtext":[{"text":"[§eLCA§r] §cYou can't use the name of an existing claim!"}]}`);
-                player.playSound("mob.creeper.say");
+
+            if (name.length == 0) {
+                sendNotification(player, "chat.claim:name_required")
+                player.playSound("note.didgeridoo");
             }
+            else if (name in claims) {
+                sendNotification(player, "chat.claim:use_unique_name")
+                player.playSound("note.didgeridoo");
+            }
+
             else {
                 // generate dict for the new claim
                 claims[name] = {
@@ -50,7 +60,7 @@ function createClaim(player: Player, start: [x: number, y: number, z: number], e
                     "whitelist": {}
 
                 }
-                player.runCommandAsync(`/tellraw @s {"rawtext":[{"text":"[§eLCA§r] Claim created!"}]}`);
+                sendNotification(player, "chat.claim:created")
                 player.playSound("random.levelup");
             }
         }
@@ -93,7 +103,6 @@ world.afterEvents.playerJoin.subscribe((data) => {
 });
 
 world.afterEvents.playerSpawn.subscribe((data) => {
-    world.sendMessage("db:" + JSON.stringify(database));
     // make sure player has a claim shovel
     data.player.runCommandAsync(`execute if entity @s [hasitem={item=${shovelID}, quantity=0}] run give @s ${shovelID} 1 0 {"keep_on_death": {}, "item_lock":{"mode":"lock_in_inventory"}}`);
 });
@@ -103,13 +112,11 @@ world.afterEvents.itemUse.subscribe((data) => {
 
     if (data.itemStack.typeId == shovelID) {
         const form = new ActionFormData()
-            .title("Test")
-            .body("Crazy, I was crazy once. They locked me in a room, a rubber room. A rubber room with rats, and rats make me crazy.")
-            .button("I do nothing")
-            .button("imagine how cringe it would be if you clicked me")
+            .title("Land Claim Menu")
+            .button("Manage Claims")
 
         form.show(data.source).then((response) => {
-            if (response.selection === 1) {
+            if (response.selection === 0) {
                 world.sendMessage("Truly cringe");
             };
         });
