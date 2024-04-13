@@ -1,7 +1,44 @@
 import { world, system, Player } from '@minecraft/server';
 import { ActionFormData, MessageFormData, ModalFormData } from '@minecraft/server-ui';
 
-var shovelID = "lca:claim_shovel"
+const shovelID = "lca:claim_shovel"
+
+const claimIcons = {
+    // name: path
+    "ui.claim.icons:land": "textures/ui/icon_recipe_nature.png",
+    "ui.claim.icons:bed": "textures/ui/icon_recipe_item.png",
+    "ui.claim.icons:farmland": "textures/ui/icon_new.png",
+    "ui.claim.icons:weapons": "textures\/ui/icon_recipe_equipment.png",
+    "ui.claim.icons:flowers": "textures/ui/icon_spring.png"
+};
+
+const dbPlayerDefault = {
+    "first-point": {
+        "is-selected": false,
+        "x": 0,
+        "y": 0,
+        "z": 0
+    },
+    "claims": {}
+}
+
+const dbClaimDefault = {
+    "start": [0, 0, 0],
+    "end": [0, 0, 0],
+
+    "icon": "",
+
+    "private": false,
+
+    "permissions": {
+        "public": {
+            "break-blocks": false,
+            "place-blocks": false,
+            "use-explosives": false
+        },
+        "players": {}
+    }
+}
 
 // check if database property exsists
 if (!(world.getDynamicPropertyIds().includes("db"))) {
@@ -9,7 +46,26 @@ if (!(world.getDynamicPropertyIds().includes("db"))) {
 }
 
 // load the database property in a dict
-var database = JSON.parse(world.getDynamicProperty("db").toString());
+var database: {} = JSON.parse(world.getDynamicProperty("db").toString());
+
+// verify that database contains correct properties
+for (var player of Object.keys(database)) {
+    database[player] = Object.assign(dbPlayerDefault, database[player])
+
+    // verify data in claims: {}
+    for (var claim of Object.keys(database[player]["claims"])) {
+        database[player]["claims"][claim] = Object.assign(dbClaimDefault, database[player]["claims"][claim])
+
+        // verify data in player: {}
+        for (var permission_player of Object.keys(database[player]["claims"][claim]["permissions"]["players"]))
+            database[player]["claims"][claim]["permissions"]["players"][permission_player] = Object.assign(
+                {
+                    "break-blocks": false,
+                    "place-blocks": false,
+                    "use-explosives": false
+                }, database[player]["claims"][claim]["permissions"]["players"][permission_player])
+    }
+}
 
 function saveDb() {
     world.setDynamicProperty("db", JSON.stringify(database));
@@ -58,7 +114,7 @@ class Ui {
         const form = new ModalFormData()
             .title("ui.claim.new:title")
             .textField("ui.claim.config.textbox:name", "ui.claim.config:name_placeholder")
-            .dropdown("ui.claim.config.dropdown:icon", Object.keys(this.claimIcons))
+            .dropdown("ui.claim.config.dropdown:icon", Object.keys(claimIcons))
             .toggle("ui.claim.config.toggle:private", false)
 
         form.show(player).then((response) => {
@@ -66,7 +122,7 @@ class Ui {
             if (!response.canceled) {
 
                 var name = response.formValues[0].toString();
-                var iconPath = this.claimIcons[Object.keys(this.claimIcons)[response.formValues[1].toString()]];
+                var iconPath = claimIcons[Object.keys(claimIcons)[response.formValues[1].toString()]];
                 var isPrivate = response.formValues[2];
 
                 if (name.length == 0) {
@@ -80,22 +136,14 @@ class Ui {
 
                 else {
                     // generate dict for the new claim
-                    claims[name] = {
-                        "start": start,
-                        "end": end,
+                    claims[name] = Object.assign({}, dbClaimDefault);
 
-                        "icon": iconPath,
+                    // save data
+                    claims[name]["start"] = start;
+                    claims[name]["end"] = end;
+                    claims[name]["icon"] = iconPath;
+                    claims[name]["private"] = isPrivate;
 
-                        "public": {
-                            "access": !isPrivate,
-                            "permisions": {
-                                "break-blocks": false,
-                                "place-blocks": false
-                            }
-                        },
-                        "whitelist": {}
-
-                    }
                     sendNotification(player, "chat.claim:created")
                     player.playSound("random.levelup");
                 }
@@ -224,15 +272,14 @@ class Ui {
                 ]
             })
             .textField("ui.claim.config.textbox:name", "ui.claim.config:name_placeholder", claim)
-            .dropdown("ui.claim.config.dropdown:icon", Object.keys(this.claimIcons), Object.values(this.claimIcons).indexOf(claims[claim]["icon"]))
-            .toggle("ui.claim.config.toggle:private", !claims[claim]["public"]["access"]);
-
+            .dropdown("ui.claim.config.dropdown:icon", Object.keys(claimIcons), Object.values(claimIcons).indexOf(claims[claim]["icon"]))
+            .toggle("ui.claim.config.toggle:private", claims[claim]["private"])
         form.show(player).then((response) => {
 
             if (!response.canceled) {
 
                 var name = response.formValues[0].toString();
-                var iconPath = this.claimIcons[Object.keys(this.claimIcons)[response.formValues[1].toString()]];
+                var iconPath = claimIcons[Object.keys(claimIcons)[response.formValues[1].toString()]];
                 var isPrivate = response.formValues[2];
 
                 if (name.length == 0) {
@@ -249,9 +296,10 @@ class Ui {
                         delete claims[claim];
                     }
 
-                    claims[name]["public"]["access"] = !isPrivate;
+                    claims[name]["private"] = isPrivate;
                     claims[name]["icon"] = iconPath;
 
+                    sendNotification(player, "chat.claim:updated")
                     player.playSound("note.cow_bell");
                 }
             }
@@ -271,21 +319,7 @@ world.afterEvents.playerJoin.subscribe((data) => {
     // set up player database
     if (!(data.playerName in database)) {
 
-        database[data.playerName] = {
-            "first-point": {
-                "is-selected": false,
-                "x": 0,
-                "y": 0,
-                "z": 0
-            },
-            "claims": {
-                /*Ex:
-                "home":{
-
-                }
-                */
-            }
-        };
+        database[data.playerName] = Object.assign({}, dbPlayerDefault);
     }
 
     world.sendMessage(JSON.parse(world.getDynamicProperty("db").toString())[data.playerName]["first-point"]["is-selected"])
@@ -305,6 +339,7 @@ world.afterEvents.playerSpawn.subscribe((data) => {
 
 // open menu when claim shovel is used
 world.afterEvents.itemUse.subscribe((data) => {
+    // world.sendMessage(JSON.stringify(database));
 
     if (data.itemStack.typeId == shovelID) {
         Ui.main(data.source);
