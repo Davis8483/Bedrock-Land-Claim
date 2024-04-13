@@ -22,15 +22,33 @@ function sendNotification(player: Player, langEntry: String) {
 }
 
 class Ui {
+    static claimIcons = {
+        // name: path
+        "ui.claim.icons:land": "textures/ui/icon_recipe_nature.png",
+        "ui.claim.icons:bed": "textures/ui/icon_recipe_item.png",
+        "ui.claim.icons:farmland": "textures/ui/icon_new.png",
+        "ui.claim.icons:weapons": "textures\/ui/icon_recipe_equipment.png",
+        "ui.claim.icons:flowers": "textures/ui/icon_spring.png"
+    };
+
     static main(player: Player) {
+        var claims: {} = database[player.name]["claims"];
+
         const form = new ActionFormData()
             .title("ui.main:title")
-            .button("ui.main:manage_claims_button")
+            .button("ui.main.button:manage", "textures/ui/icon_setting.png")
+            .button("ui.main.button:close")
 
         form.show(player).then((response) => {
-            if (response.selection === 0) {
-                this.manage(player);
-            };
+            if (response.selection == 0) {
+                if (Object.keys(claims).length == 0) {
+                    sendNotification(player, "chat.claim:no_claims");
+                    player.playSound("note.didgeridoo");
+                }
+                else {
+                    this.manage(player);
+                }
+            }
         });
     }
 
@@ -39,16 +57,17 @@ class Ui {
 
         const form = new ModalFormData()
             .title("ui.claim.new:title")
-            // .body("Crazy, I was crazy once. They locked me in a room, a rubber room. A rubber room with rats, and rats make me crazy.")
-            .textField("ui.claim:name", "ui.claim:name_placeholder")
-            .toggle("ui.claim:public_toggle", true)
+            .textField("ui.claim.config.textbox:name", "ui.claim.config:name_placeholder")
+            .dropdown("ui.claim.config.dropdown:icon", Object.keys(this.claimIcons))
+            .toggle("ui.claim.config.toggle:private", false)
 
         form.show(player).then((response) => {
 
             if (!response.canceled) {
 
                 var name = response.formValues[0].toString();
-                var hasPublicAccess = response.formValues[1];
+                var iconPath = this.claimIcons[Object.keys(this.claimIcons)[response.formValues[1].toString()]];
+                var isPrivate = response.formValues[2];
 
                 if (name.length == 0) {
                     sendNotification(player, "chat.claim:name_required")
@@ -65,8 +84,10 @@ class Ui {
                         "start": start,
                         "end": end,
 
+                        "icon": iconPath,
+
                         "public": {
-                            "access": hasPublicAccess,
+                            "access": !isPrivate,
                             "permisions": {
                                 "break-blocks": false,
                                 "place-blocks": false
@@ -85,51 +106,65 @@ class Ui {
     }
 
     static manage(player: Player) {
-        var claims = Object.keys(database[player.name]["claims"]);
+        var claims = database[player.name]["claims"];
 
         const form = new ActionFormData()
             .title("ui.manage:title")
 
-        for (var c of claims) {
-            form.button(c);
+        for (var c of Object.keys(claims)) {
+            form.button(c, claims[c]["icon"]);
         }
 
-        form.button("ui:back_button")
+        form.button("ui.global.button:back")
 
         form.show(player).then((response) => {
-            if (response.selection == claims.length) {
+            if (response.selection == Object.keys(claims).length) {
                 // return to previous menu
                 this.main(player);
             }
             else {
-                this.manageClaim(player, claims[response.selection].toString());
+                this.manageClaim(player, Object.keys(claims)[response.selection].toString());
             }
         });
     }
 
     static manageClaim(player: Player, claim: string) {
-        var claims = Object.keys(database[player.name]["claims"]);
+        var claims = database[player.name]["claims"];
 
         const form = new ActionFormData()
-            .title(claim)
-            .button("ui.manage.public_permissions_button")
-            .button("ui.manage.whitelist_button")
-            .button("ui.manage.rename_button")
-            .button("ui.manage.delete_claim_button")
-            .button("ui:back_button")
+            .title({
+                "rawtext": [
+                    { "translate": "ui.manage:title" },
+                    { "text": `: ${claim}` }
+                ]
+            })
+            .body({
+                "rawtext": [
+                    { "text": "\n" },
+                    { "translate": "ui.manage.body:claim_start" },
+                    { "text": `:  §cX§r=${claims[claim]["start"][0]} §9Z§r=${claims[claim]["start"][2]}\n\n` },
+                    { "translate": "ui.manage.body:claim_end" },
+                    { "text": `: §cX§r=${claims[claim]["end"][0]} §9Z§r=${claims[claim]["end"][2]}\n ` }
+                ]
+            })
+            .button("ui.manage.button:config", "textures/ui/debug_glyph_color.png")
+            .button("ui.manage.button:public_permissions", "textures/ui/icon_multiplayer.png")
+            .button("ui.manage.button:player_permissions", "textures/ui/icon_steve.png")
+            .button("ui.manage.button:sell", "textures/ui/icon_trash.png")
+            .button("ui.global.button:back")
 
         form.show(player).then((response) => {
             if (response.selection == 0) {
-
+                this.claimConfig(player, claim);
             }
             else if (response.selection == 1) {
-                this.publicPermissions(player, claim);
+
             }
             else if (response.selection == 2) {
-                this.renameClaim(player, claim);
+                this.publicPermissions(player, claim);
             }
             else if (response.selection == 3) {
-                this.deleteClaim(player, claim);
+                this.sellClaim(player, claim);
             }
             else if (response.selection == 4) {
                 // return to previous menu
@@ -138,14 +173,14 @@ class Ui {
         });
     }
 
-    static deleteClaim(player: Player, claim: string) {
+    static sellClaim(player: Player, claim: string) {
         var claims: {} = database[player.name]["claims"];
 
         const form = new MessageFormData()
             .title(claim)
-            .body("ui.manage.delete:body")
-            .button1("ui.manage.delete:cancel_button")
-            .button2("ui.manage.delete:confirm_button")
+            .body("ui.manage.sell:body")
+            .button1("ui.manage.sell.button:cancel")
+            .button2("ui.manage.sell.button:confirm")
 
         form.show(player).then((response) => {
             // if deletion canceled
@@ -158,7 +193,7 @@ class Ui {
 
                 // delete claim
                 delete claims[claim];
-                sendNotification(player, "chat.claim:deleted")
+                sendNotification(player, "chat.claim:sold")
                 player.playSound("mob.creeper.say");
 
                 saveDb();
@@ -166,38 +201,45 @@ class Ui {
         });
     }
 
-    static renameClaim(player: Player, claim: string) {
+    static claimConfig(player: Player, claim: string) {
         var claims: {} = database[player.name]["claims"];
 
         const form = new ModalFormData()
-            .title("Rename Claim")
-            // .body("Crazy, I was crazy once. They locked me in a room, a rubber room. A rubber room with rats, and rats make me crazy.")
-            .textField("ui.claim:name", "ui.claim:name_placeholder")
+            .title({
+                "rawtext": [
+                    { "translate": "ui.manage.config:title" },
+                    { "text": `: ${claim}` }
+                ]
+            })
+            .textField("ui.claim.config.textbox:name", "ui.claim.config:name_placeholder", claim)
+            .dropdown("ui.claim.config.dropdown:icon", Object.keys(this.claimIcons), Object.values(this.claimIcons).indexOf(claims[claim]["icon"]))
+            .toggle("ui.claim.config.toggle:private", !claims[claim]["public"]["access"]);
 
         form.show(player).then((response) => {
 
             if (!response.canceled) {
 
                 var name = response.formValues[0].toString();
+                var iconPath = this.claimIcons[Object.keys(this.claimIcons)[response.formValues[1].toString()]];
+                var isPrivate = response.formValues[2];
 
                 if (name.length == 0) {
                     sendNotification(player, "chat.claim:name_required")
                     player.playSound("note.didgeridoo");
                 }
-                else if (name in claims) {
-                    sendNotification(player, "chat.claim:use_unique_name")
-                    player.playSound("note.didgeridoo");
-                }
-
                 else {
 
-                    // copy the claim over to the new name key
-                    claims[name] = Object.assign({}, claim[claim]);
+                    if (claim != name) {
+                        // copy the claim over to the new name key
+                        claims[name] = Object.assign({}, claims[claim]);
 
-                    // delete the old name key
-                    delete claims[claim];
+                        // delete the old name key
+                        delete claims[claim];
+                    }
 
-                    sendNotification(player, "chat.claim:renamed")
+                    claims[name]["public"]["access"] = !isPrivate;
+                    claims[name]["icon"] = iconPath;
+
                     player.playSound("note.cow_bell");
                 }
             }
@@ -246,7 +288,7 @@ world.afterEvents.playerJoin.subscribe((data) => {
 
 world.afterEvents.playerSpawn.subscribe((data) => {
     // make sure player has a claim shovel
-    data.player.runCommandAsync(`execute if entity @s [hasitem={item=${shovelID}, quantity=0}] run give @s ${shovelID} 1 0 {"keep_on_death": {}, "item_lock":{"mode":"lock_in_inventory"}}`);
+    data.player.runCommandAsync(`execute if entity @s[hasitem = { item=${shovelID}, quantity = 0}] run give @s ${shovelID} 1 0 { "keep_on_death": { }, "item_lock": { "mode": "lock_in_inventory" } } `);
 });
 
 // open menu when claim shovel is used

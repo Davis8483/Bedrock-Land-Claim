@@ -6,27 +6,38 @@ chat.prefix=[§eLCA§r]
 chat.claim:name_required=§cYou must provide a name!§r
 chat.claim:use_unique_name=§cYou can't use the name of an existing claim!§r
 chat.claim:created=§aClaim created!§r
-chat.claim:renamed=§aClaim renamed!§r
-chat.claim:deleted=§cClaim deleted.§r
+chat.claim:no_claims=§cYou don't have any claims!§r
+chat.claim:sold=§cClaim sold.§r
 
-ui:back_button=<= Back
+ui.global.button:back=Back
 
 ui.main:title=Land Claim Menu
-ui.main:manage_claims_button=Manage Claims
+ui.main.button:manage=Manage Claims
+ui.main.button:close=Close
 
 ui.manage:title=Manage Claim
+ui.manage.body:claim_start=Claim Start
+ui.manage.body:claim_end=Claim End
+ui.manage.button:config=Config
+ui.manage.button:public_permissions=Public Permissions
+ui.manage.button:player_permissions=Player Permissions
+ui.manage.button:sell=§cSell Claim§r
 
-ui.manage.public_permissions_button=Public Permissions
-ui.manage.whitelist_button=Whitelist
-ui.manage.rename_button=Rename
-ui.manage.delete_claim_button=§cSell Claim§r
+ui.manage.sell:body=Are you sure you want to sell this claim? This action cannot be undone.
+ui.manage.sell.button:confirm=§cSell Claim§r
+ui.manage.sell.button:cancel=Cancel
 
-ui.manage.delete:body=Are you sure you want to sell this claim? This action cannot be undone.
-ui.manage.delete:confirm_button=§cSell Claim§r
-ui.manage.delete:cancel_button=Cancel
+ui.manage.config:title=Claim Config
 
-ui.claim.new:title=New Claim
+ui.claim.new:title=ui.main:title
 
-ui.claim:public_toggle=Public Access
-ui.claim:name=Name
-ui.claim:name_placeholder=Ex: Home
+ui.claim.config.textbox:name=Name
+ui.claim.config:name_placeholder=Ex: Home
+ui.claim.config.dropdown:icon=Icon 
+ui.claim.config.toggle:private=Private
+
+ui.claim.icons:land=Land
+ui.claim.icons:bed=Bed
+ui.claim.icons:farmland=Farmland
+ui.claim.icons:weapons=Weapons
+ui.claim.icons:flowers=Flowers

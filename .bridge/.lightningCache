@@ -1,25 +1,25 @@
 $formatVersion: 1
 #manifest
-projects/LCA V4/BP/manifest.json|1712865111
+projects/Bedrock-Land-Claim/BP/manifest.json|1712924744
 #unknown
-projects/LCA V4/BP/pack_icon.png|1712779706
-projects/LCA V4/RP/pack_icon.png|1712779706
+projects/Bedrock-Land-Claim/BP/pack_icon.png|1712924744
+projects/Bedrock-Land-Claim/RP/pack_icon.png|1712924744
 #gameTest
-projects/LCA V4/BP/scripts/main.ts|1712896929
+projects/Bedrock-Land-Claim/BP/scripts/main.ts|1712975361
 #item
-projects/LCA V4/BP/items/claim_shovel.json|1712789622|{"identifier":["lca:claim_shovel"],"itemTexture":["lca_claim_shovel"],"tag":[]}
-#clientManifest
-projects/LCA V4/RP/manifest.json|1712779706|{"uuid":["2b221639-32d8-4f99-b64b-461337fdec3d"]}
+projects/Bedrock-Land-Claim/BP/items/claim_shovel.json|1712924744|{"identifier":["lca:claim_shovel"],"itemTexture":["lca_claim_shovel"],"tag":[]}
 #langDef
-projects/LCA V4/RP/texts/languages.json|1712779706
+projects/Bedrock-Land-Claim/RP/texts/languages.json|1712924744
+#clientManifest
+projects/Bedrock-Land-Claim/RP/manifest.json|1712924744|{"uuid":["2b221639-32d8-4f99-b64b-461337fdec3d"]}
 #texture
-projects/LCA V4/RP/textures/items/claim_shovel.png|1712779706
-projects/LCA V4/RP/textures/particles/first_point.png|1712779706
-#clientLang
-projects/LCA V4/RP/texts/en_US.lang|1712895904|{"actionText":[]}
+projects/Bedrock-Land-Claim/RP/textures/particles/first_point.png|1712924744
+projects/Bedrock-Land-Claim/RP/textures/items/claim_shovel.png|1712924744
 #renderController
-projects/LCA V4/RP/render_controllers/first_point.json|1712779706|{"identifier":["controller.render.first_point"]}
-#particle
-projects/LCA V4/RP/particles/first_point.json|1712779706|{"identifier":["lca:first_point"],"texturePath":["projects/LCA V4/RP/textures/particles/first_point.png"]}
+projects/Bedrock-Land-Claim/RP/render_controllers/first_point.json|1712924744|{"identifier":["controller.render.first_point"]}
+#clientLang
+projects/Bedrock-Land-Claim/RP/texts/en_US.lang|1712974932|{"actionText":[]}
 #itemTexture
-projects/LCA V4/RP/textures/item_texture.json|1712779706|{"texture":["lca_claim_shovel"],"texturePath":["projects/LCA V4/RP/textures/items/claim_shovel.png"]}
+projects/Bedrock-Land-Claim/RP/textures/item_texture.json|1712924744|{"texture":["lca_claim_shovel"],"texturePath":["projects/Bedrock-Land-Claim/RP/textures/items/claim_shovel.png"]}
+#particle
+projects/Bedrock-Land-Claim/RP/particles/first_point.json|1712924744|{"identifier":["lca:first_point"],"texturePath":["projects/Bedrock-Land-Claim/RP/textures/particles/first_point.png"]}
