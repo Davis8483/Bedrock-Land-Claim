@@ -8,6 +8,7 @@ chat.claim:use_unique_name=§cYou can't use the name of an existing claim!§r
 chat.claim:created=§aClaim created!§r
 chat.claim:no_claims=§cYou don't have any claims!§r
 chat.claim:sold=§cClaim sold.§r
+chat.claim:updated=§aClaim config has been saved!§r
 
 ui.global.button:back=Back
 
@@ -22,6 +23,8 @@ ui.manage.button:config=Config
 ui.manage.button:public_permissions=Public Permissions
 ui.manage.button:player_permissions=Player Permissions
 ui.manage.button:sell=§cSell Claim§r
+ui.manage.label:private=§c[Private]§r
+ui.manage.label:public=§a[Public]§r
 
 ui.manage.sell:body=Are you sure you want to sell this claim? This action cannot be undone.
 ui.manage.sell.button:confirm=§cSell Claim§r

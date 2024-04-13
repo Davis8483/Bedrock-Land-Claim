@@ -112,7 +112,19 @@ class Ui {
             .title("ui.manage:title")
 
         for (var c of Object.keys(claims)) {
-            form.button(c, claims[c]["icon"]);
+            if (claims[c]["private"]) {
+                var label = "ui.manage.label:private"
+            }
+            else {
+                var label = "ui.manage.label:public"
+            }
+            form.button(
+                {
+                    "rawtext": [
+                        { "text": `${c}\n` },
+                        { "translate": label }
+                    ]
+                }, claims[c]["icon"]);
         }
 
         form.button("ui.global.button:back")
