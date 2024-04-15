@@ -10,6 +10,8 @@ chat.claim:no_claims=§cYou don't have any claims!§r
 chat.claim:sold=§cClaim sold.§r
 chat.claim:intersecting=§cA claim is already here!§r
 chat.claim:updated=§aClaim config has been saved!§r
+chat.claim.point:selected=First point selected
+chat.claim.point:hint=§bCrouch click to create claim!§r
 
 ui.global.button:back=Back
 

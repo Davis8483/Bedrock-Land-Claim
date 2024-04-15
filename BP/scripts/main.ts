@@ -14,7 +14,6 @@ const claimIcons = {
 
 const dbPlayerDefault = {
     "first-point": {
-        "is-selected": false,
         "x": 0,
         "y": 0,
         "z": 0
@@ -349,9 +348,6 @@ world.afterEvents.playerJoin.subscribe((data) => {
         database[data.playerName] = Object.assign({}, dbPlayerDefault);
     }
 
-    // reset claim shovel selection
-    database[data.playerName]["first-point"]["is-selected"] = false;
-
     // save changes to the database
     saveDb();
 
@@ -396,20 +392,25 @@ world.beforeEvents.playerBreakBlock.subscribe((data) => {
 
         var firstPoint = database[data.player.name]["first-point"];
 
-        if (!firstPoint["is-selected"]) {
-            firstPoint["is-selected"] = true;
-
+        if (!data.player.isSneaking) {
             firstPoint["x"] = data.block.x;
             firstPoint["y"] = data.block.y;
             firstPoint["z"] = data.block.z;
 
-            data.player.runCommandAsync("/particle lca:first_point " + data.block.x + " " + (data.block.y + 1) + " " + data.block.z)
-            data.player.sendMessage("First point selected: (" + data.block.x + ", " + data.block.y + ", " + data.block.z + ")");
-
+            data.player.sendMessage({
+                "rawtext": [
+                    { "translate": "chat.prefix" },
+                    { "text": " " },
+                    { "translate": "chat.claim.point:selected" },
+                    { "text": `: [§c${data.block.x}§r, §a${data.block.y}§r, §9${data.block.z}§r]\n` },
+                    { "translate": "chat.claim.point:hint" }
+                ]
+            });
+            system.run(() => {
+                data.player.playSound("note.cow_bell")
+            });
         }
         else {
-            firstPoint["is-selected"] = false;
-
             var secondPoint = { "x": data.block.x, "y": data.block.y, "z": data.block.z }
             var intersectingClaim = false;
 
@@ -433,7 +434,9 @@ world.beforeEvents.playerBreakBlock.subscribe((data) => {
             }
             else {
                 system.run(() => {
-                    Ui.newClaim(data.player, { "x": firstPoint.x, "y": firstPoint.y, "z": firstPoint.z }, secondPoint);
+                    data.player.playSound("note.cow_bell");
+
+                    Ui.newClaim(data.player, { ...firstPoint }, secondPoint);
                 });
             }
 
