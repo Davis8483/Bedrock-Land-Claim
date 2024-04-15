@@ -8,6 +8,7 @@ chat.claim:use_unique_name=§cYou can't use the name of an existing claim!§r
 chat.claim:created=§aClaim created!§r
 chat.claim:no_claims=§cYou don't have any claims!§r
 chat.claim:sold=§cClaim sold.§r
+chat.claim:intersecting=§cA claim is already here!§r
 chat.claim:updated=§aClaim config has been saved!§r
 
 ui.global.button:back=Back

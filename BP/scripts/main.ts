@@ -1,9 +1,9 @@
-import { world, system, Player } from '@minecraft/server';
+import { world, system, Player, Vector3 } from '@minecraft/server';
 import { ActionFormData, MessageFormData, ModalFormData } from '@minecraft/server-ui';
 
 const shovelID = "lca:claim_shovel"
-
 const claimIcons = {
+
     // name: path
     "ui.claim.icons:land": "textures/ui/icon_recipe_nature.png",
     "ui.claim.icons:bed": "textures/ui/icon_recipe_item.png",
@@ -22,9 +22,15 @@ const dbPlayerDefault = {
     "claims": {}
 }
 
+const dbPermissionsDefault = {
+    "break-blocks": false,
+    "use-items": false,
+    "use-explosives": false,
+}
+
 const dbClaimDefault = {
-    "start": [0, 0, 0],
-    "end": [0, 0, 0],
+    "start": { "x": 0, "y": 0, "z": 0 },
+    "end": { "x": 0, "y": 0, "z": 0 },
 
     "icon": "",
 
@@ -33,11 +39,7 @@ const dbClaimDefault = {
     "private": false,
 
     "permissions": {
-        "public": {
-            "break-blocks": false,
-            "place-blocks": false,
-            "use-explosives": false
-        },
+        "public": { ...dbPermissionsDefault },
         "players": {}
     }
 }
@@ -61,9 +63,7 @@ for (var player of Object.keys(database)) {
         // verify data in player: {}
         for (var permission_player of Object.keys(database[player]["claims"][claim]["permissions"]["players"])) {
             database[player]["claims"][claim]["permissions"]["players"][permission_player] = {
-                "break-blocks": false,
-                "place-blocks": false,
-                "use-explosives": false,
+                ...dbPermissionsDefault,
                 ...database[player]["claims"][claim]["permissions"]["players"][permission_player]
             }
         }
@@ -78,6 +78,23 @@ function saveDb() {
 
 function sendNotification(player: Player, langEntry: String) {
     player.runCommandAsync(`tellraw @s {"rawtext":[{"translate":"chat.prefix"}, {"text":" "}, {"translate":"${langEntry}"}]}`);
+}
+
+// // Returns true if two claims (l1, r1) and (l2, r2) overlap 
+function doOverlap(l1: Vector3, r1: Vector3, l2: Vector3, r2: Vector3) {
+    // Get the left, right, bottom, and top coordinates of each rectangle
+    const rect1Left = Math.min(l1.x, r1.x);
+    const rect1Right = Math.max(l1.x, r1.x);
+    const rect1Top = Math.max(l1.z, r1.z);
+    const rect1Bottom = Math.min(l1.z, r1.z);
+
+    const rect2Left = Math.min(l2.x, r2.x);
+    const rect2Right = Math.max(l2.x, r2.x);
+    const rect2Top = Math.max(l2.z, r2.z);
+    const rect2Bottom = Math.min(l2.z, r2.z);
+
+    // Check if there's no overlap on both x and y directions
+    return !(rect1Right < rect2Left || rect2Right < rect1Left || rect1Top < rect2Bottom || rect2Top < rect1Bottom);
 }
 
 class Ui {
@@ -111,7 +128,7 @@ class Ui {
         });
     }
 
-    static newClaim(player: Player, start: [x: number, y: number, z: number], end: [x: number, y: number, z: number]) {
+    static newClaim(player: Player, start: Vector3, end: Vector3) {
         var claims: {} = database[player.name]["claims"];
 
         const form = new ModalFormData()
@@ -208,9 +225,9 @@ class Ui {
                 "rawtext": [
                     { "text": "\n" },
                     { "translate": "ui.manage.body:claim_start" },
-                    { "text": `:  §cX§r=${claims[claim]["start"][0]} §9Z§r=${claims[claim]["start"][2]}\n\n` },
+                    { "text": `:  §cX§r=${claims[claim]["start"]["x"]} §9Z§r=${claims[claim]["start"]["z"]}\n\n` },
                     { "translate": "ui.manage.body:claim_end" },
-                    { "text": `: §cX§r=${claims[claim]["end"][0]} §9Z§r=${claims[claim]["end"][2]}\n ` }
+                    { "text": `: §cX§r=${claims[claim]["end"]["x"]} §9Z§r=${claims[claim]["end"]["z"]}\n ` }
                 ]
             })
             .button("ui.manage.button:config", "textures/ui/debug_glyph_color.png")
@@ -347,8 +364,6 @@ world.afterEvents.playerSpawn.subscribe((data) => {
 
 // open menu when claim shovel is used
 world.afterEvents.itemUse.subscribe((data) => {
-    // world.sendMessage(JSON.stringify(database));
-
     if (data.itemStack.typeId == shovelID) {
         Ui.main(data.source);
     };
@@ -395,11 +410,32 @@ world.beforeEvents.playerBreakBlock.subscribe((data) => {
         else {
             firstPoint["is-selected"] = false;
 
-            world.sendMessage("Second point selected");
+            var secondPoint = { "x": data.block.x, "y": data.block.y, "z": data.block.z }
+            var intersectingClaim = false;
 
-            system.run(() => {
-                Ui.newClaim(data.player, [firstPoint["x"], firstPoint["y"], firstPoint["z"]], [data.block.x, data.block.y, data.block.z]);
-            });
+            // make sure new claim isn't intersecting others
+            for (var player of Object.keys(database)) {
+                var claims = database[player]["claims"]
+
+                for (var claim of Object.keys(claims)) {
+                    if (doOverlap(claims[claim]["start"], claims[claim]["end"], firstPoint, secondPoint)) {
+                        intersectingClaim = true;
+                    }
+                }
+            }
+
+            if (intersectingClaim) {
+                sendNotification(data.player, "chat.claim:intersecting")
+
+                system.run(() => {
+                    data.player.playSound("note.didgeridoo")
+                });
+            }
+            else {
+                system.run(() => {
+                    Ui.newClaim(data.player, { "x": firstPoint.x, "y": firstPoint.y, "z": firstPoint.z }, secondPoint);
+                });
+            }
 
         }
 
@@ -423,12 +459,12 @@ system.runInterval(() => {
 
             // all 4 points of the claim
             var points = [
-                [[start[0], start[2]], [start[0], end[2]]],
-                [[end[0], start[2]], [end[0], end[2]]]
+                [[start["x"], start["z"]], [start["x"], end["z"]]],
+                [[end["x"], start["z"]], [end["x"], end["z"]]]
             ]
 
             // only render particle if claim is loaded and particles are enabled
-            if ((world.getDimension("overworld").getBlock({ "x": start[0], "y": start[1], "z": start[2] }) != undefined) && (claims[claim]["particles"])) {
+            if ((world.getDimension("overworld").getBlock(start) != undefined) && (claims[claim]["particles"])) {
                 // loop through all claim points to determine particle type
                 for (var a = 0; a < points.length; a++) {
                     for (var b = 0; b < points[a].length; b++) {

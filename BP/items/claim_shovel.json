@@ -11,12 +11,7 @@
     "components": {
       "minecraft:max_stack_size": 1,
       "minecraft:hand_equipped": true,
-      "minecraft:cooldown": {
-        "category": "claim_shovel",
-        "duration": 1
-      },
       "minecraft:digger": {
-        "use_efficiency": true,
         "destroy_speeds": [
           {
             "block": {
