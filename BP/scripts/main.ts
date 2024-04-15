@@ -8,7 +8,7 @@ const claimIcons = {
     "ui.claim.icons:land": "textures/ui/icon_recipe_nature.png",
     "ui.claim.icons:bed": "textures/ui/icon_recipe_item.png",
     "ui.claim.icons:farmland": "textures/ui/icon_new.png",
-    "ui.claim.icons:weapons": "textures\/ui/icon_recipe_equipment.png",
+    "ui.claim.icons:weapons": "textures/ui/icon_recipe_equipment.png",
     "ui.claim.icons:flowers": "textures/ui/icon_spring.png"
 };
 
@@ -27,6 +27,8 @@ const dbClaimDefault = {
     "end": [0, 0, 0],
 
     "icon": "",
+
+    "particles": true,
 
     "private": false,
 
@@ -50,20 +52,21 @@ var database: {} = JSON.parse(world.getDynamicProperty("db").toString());
 
 // verify that database contains correct properties
 for (var player of Object.keys(database)) {
-    database[player] = Object.assign(dbPlayerDefault, database[player])
+    database[player] = { ...dbPlayerDefault, ...database[player] }
 
     // verify data in claims: {}
     for (var claim of Object.keys(database[player]["claims"])) {
-        database[player]["claims"][claim] = Object.assign(dbClaimDefault, database[player]["claims"][claim])
+        database[player]["claims"][claim] = { ...dbClaimDefault, ...database[player]["claims"][claim] }
 
         // verify data in player: {}
-        for (var permission_player of Object.keys(database[player]["claims"][claim]["permissions"]["players"]))
-            database[player]["claims"][claim]["permissions"]["players"][permission_player] = Object.assign(
-                {
-                    "break-blocks": false,
-                    "place-blocks": false,
-                    "use-explosives": false
-                }, database[player]["claims"][claim]["permissions"]["players"][permission_player])
+        for (var permission_player of Object.keys(database[player]["claims"][claim]["permissions"]["players"])) {
+            database[player]["claims"][claim]["permissions"]["players"][permission_player] = {
+                "break-blocks": false,
+                "place-blocks": false,
+                "use-explosives": false,
+                ...database[player]["claims"][claim]["permissions"]["players"][permission_player]
+            }
+        }
     }
 }
 
@@ -116,6 +119,7 @@ class Ui {
             .textField("ui.claim.config.textbox:name", "ui.claim.config:name_placeholder")
             .dropdown("ui.claim.config.dropdown:icon", Object.keys(claimIcons))
             .toggle("ui.claim.config.toggle:private", false)
+            .toggle("ui.claim.config.toggle:border_particles", true)
 
         form.show(player).then((response) => {
 
@@ -124,6 +128,7 @@ class Ui {
                 var name = response.formValues[0].toString();
                 var iconPath = claimIcons[Object.keys(claimIcons)[response.formValues[1].toString()]];
                 var isPrivate = response.formValues[2];
+                var showBorderParticles = response.formValues[3];
 
                 if (name.length == 0) {
                     sendNotification(player, "chat.claim:name_required")
@@ -143,6 +148,7 @@ class Ui {
                     claims[name]["end"] = end;
                     claims[name]["icon"] = iconPath;
                     claims[name]["private"] = isPrivate;
+                    claims[name]["particles"] = showBorderParticles;
 
                     sendNotification(player, "chat.claim:created")
                     player.playSound("random.levelup");
@@ -274,6 +280,8 @@ class Ui {
             .textField("ui.claim.config.textbox:name", "ui.claim.config:name_placeholder", claim)
             .dropdown("ui.claim.config.dropdown:icon", Object.keys(claimIcons), Object.values(claimIcons).indexOf(claims[claim]["icon"]))
             .toggle("ui.claim.config.toggle:private", claims[claim]["private"])
+            .toggle("ui.claim.config.toggle:border_particles", claims[claim]["particles"])
+
         form.show(player).then((response) => {
 
             if (!response.canceled) {
@@ -281,6 +289,7 @@ class Ui {
                 var name = response.formValues[0].toString();
                 var iconPath = claimIcons[Object.keys(claimIcons)[response.formValues[1].toString()]];
                 var isPrivate = response.formValues[2];
+                var showBorderParticles = response.formValues[3];
 
                 if (name.length == 0) {
                     sendNotification(player, "chat.claim:name_required")
@@ -298,6 +307,7 @@ class Ui {
 
                     claims[name]["private"] = isPrivate;
                     claims[name]["icon"] = iconPath;
+                    claims[name]["particles"] = showBorderParticles;
 
                     sendNotification(player, "chat.claim:updated")
                     player.playSound("note.cow_bell");
@@ -322,8 +332,6 @@ world.afterEvents.playerJoin.subscribe((data) => {
         database[data.playerName] = Object.assign({}, dbPlayerDefault);
     }
 
-    world.sendMessage(JSON.parse(world.getDynamicProperty("db").toString())[data.playerName]["first-point"]["is-selected"])
-
     // reset claim shovel selection
     database[data.playerName]["first-point"]["is-selected"] = false;
 
@@ -347,13 +355,19 @@ world.afterEvents.itemUse.subscribe((data) => {
 });
 
 world.beforeEvents.itemUseOn.subscribe((data) => {
+    world.sendMessage("" + data.itemStack.getTags());
 
-    if (data.itemStack.typeId != shovelID) {
 
-        world.sendMessage("your not allowed to place blocks");
+    // if (!(data.itemStack.getCanPlaceOn().length == 0)) {
+    //     world.sendMessage("your not allowed to place blocks");
+    // }
 
-        data.cancel = true;
-    }
+    // if (data.itemStack.typeId != shovelID) {
+
+    //     world.sendMessage("your not allowed to place blocks");
+
+    //     data.cancel = true;
+    // }
 
 });
 
@@ -395,9 +409,54 @@ world.beforeEvents.playerBreakBlock.subscribe((data) => {
     }
 });
 
-// // runs code every 15 ticks
-// system.runInterval(() => {
-// },
-//     15
-// );
+// runs code every 1 second
+system.runInterval(() => {
+
+    // create particles
+    for (var player of Object.keys(database)) {
+        var claims = database[player]["claims"]
+
+        for (var claim of Object.keys(claims)) {
+            // user defined start and end points of the claim
+            var start = claims[claim]["start"];
+            var end = claims[claim]["end"];
+
+            // all 4 points of the claim
+            var points = [
+                [[start[0], start[2]], [start[0], end[2]]],
+                [[end[0], start[2]], [end[0], end[2]]]
+            ]
+
+            // only render particle if claim is loaded and particles are enabled
+            if ((world.getDimension("overworld").getBlock({ "x": start[0], "y": start[1], "z": start[2] }) != undefined) && (claims[claim]["particles"])) {
+                // loop through all claim points to determine particle type
+                for (var a = 0; a < points.length; a++) {
+                    for (var b = 0; b < points[a].length; b++) {
+
+                        // creates sets of verticle claim particles from the bottom to top of the world
+                        for (var i = -60; i < 320; i += 10) {
+                            if (points[a][b][0] > points[a ^ 1][b][0]) {
+                                var xParticleType = "lca:negx_claim_particle";
+                            }
+                            else {
+                                var xParticleType = "lca:posx_claim_particle";
+                            }
+
+                            if (points[a][b][1] > points[a][b ^ 1][1]) {
+                                var yParticleType = "lca:negz_claim_particle";
+                            }
+                            else {
+                                var yParticleType = "lca:posz_claim_particle";
+                            }
+                            world.getDimension("overworld").runCommand(`particle ${xParticleType} ${points[a][b][0]} ${i} ${points[a][b][1]}`);
+                            world.getDimension("overworld").runCommand(`particle ${yParticleType} ${points[a][b][0]} ${i} ${points[a][b][1]}`);
+                            world.getDimension("overworld").runCommand(`particle lca:rising_claim_particle ${points[a][b][0]} ${i} ${points[a][b][1]}`);
+                            world.getDimension("overworld").runCommand(`particle lca:falling_claim_particle ${points[a][b][0]} ${i} ${points[a][b][1]}`);
+                        }
+                    }
+                }
+            }
+        }
+    }
+}, 20);
 

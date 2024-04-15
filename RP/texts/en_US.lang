@@ -32,12 +32,13 @@ ui.manage.sell.button:cancel=Cancel
 
 ui.manage.config:title=Claim Config
 
-ui.claim.new:title=ui.main:title
+ui.claim.new:title=New Claim
 
 ui.claim.config.textbox:name=Name
 ui.claim.config:name_placeholder=Ex: Home
 ui.claim.config.dropdown:icon=Icon 
 ui.claim.config.toggle:private=Private
+ui.claim.config.toggle:border_particles=Border Particles
 
 ui.claim.icons:land=Land
 ui.claim.icons:bed=Bed

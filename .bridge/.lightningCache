@@ -1,26 +1,29 @@
 $formatVersion: 1
+#manifest
+projects/LCA V4/BP/manifest.json|1712978775
 #unknown
 projects/LCA V4/BP/pack_icon.png|1712779706
 projects/LCA V4/RP/pack_icon.png|1712779706
-projects/LCA V4/bp/scripts/main.ts|1712978442
-#manifest
-projects/LCA V4/BP/manifest.json|1712978776345
 #gameTest
-projects/LCA V4/BP/scripts/main.ts|1712986085
+projects/LCA V4/BP/scripts/main.ts|1713143946
 #item
 projects/LCA V4/BP/items/claim_shovel.json|1712789622|{"identifier":["lca:claim_shovel"],"itemTexture":["lca_claim_shovel"],"tag":[]}
 #clientManifest
-projects/LCA V4/RP/manifest.json|1712978783384|{"uuid":["2b221639-32d8-4f99-b64b-461337fdec3d"]}
+projects/LCA V4/RP/manifest.json|1712978782|{"uuid":["2b221639-32d8-4f99-b64b-461337fdec3d"]}
 #langDef
 projects/LCA V4/RP/texts/languages.json|1712779706
-#renderController
-projects/LCA V4/RP/render_controllers/first_point.json|1712779706|{"identifier":["controller.render.first_point"]}
-#clientLang
-projects/LCA V4/RP/texts/en_US.lang|1712985552|{"actionText":[]}
 #texture
 projects/LCA V4/RP/textures/items/claim_shovel.png|1712779706
 projects/LCA V4/RP/textures/particles/first_point.png|1712779706
-#particle
-projects/LCA V4/RP/particles/first_point.json|1712779706|{"identifier":["lca:first_point"],"texturePath":["projects/LCA V4/RP/textures/particles/first_point.png"]}
+#clientLang
+projects/LCA V4/RP/texts/en_US.lang|1713142592|{"actionText":[]}
 #itemTexture
 projects/LCA V4/RP/textures/item_texture.json|1712779706|{"texture":["lca_claim_shovel"],"texturePath":["projects/LCA V4/RP/textures/items/claim_shovel.png"]}
+#particle
+projects/LCA V4/RP/particles/first_point.particle.json|1713049809|{"identifier":["lca:first_point"],"texturePath":["projects/LCA V4/RP/textures/particles/first_point.png"]}
+projects/LCA V4/RP/particles/falling_claim_particle.particle.json|1713143560587|{"identifier":["lca:falling_claim_particle"],"texturePath":[]}
+projects/LCA V4/RP/particles/negx_claim_dust.json|1713061119557|{"identifier":["lca:negx_claim_particle"],"texturePath":[]}
+projects/LCA V4/RP/particles/negsz_claim_dust.json|1713061111083|{"identifier":["lca:negz_claim_particle"],"texturePath":[]}
+projects/LCA V4/RP/particles/posz_claim_dust.json|1713061133791|{"identifier":["lca:posz_claim_particle"],"texturePath":[]}
+projects/LCA V4/RP/particles/posx_claim_dust.json|1713061128258|{"identifier":["lca:posx_claim_particle"],"texturePath":[]}
+projects/LCA V4/RP/particles/rising_claim_particle.particle.json|1713143551887|{"identifier":["lca:rising_claim_particle"],"texturePath":[]}
