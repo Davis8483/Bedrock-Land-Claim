@@ -25,6 +25,7 @@ const dbPermissionsDefault = {
     "break-blocks": false,
     "use-items-on-blocks": false,
     "use-tnt": false,
+    "hurt-entities": false
 }
 
 const dbClaimDefault = {
@@ -556,6 +557,35 @@ world.beforeEvents.explosion.subscribe((data) => {
 
     }
 });
+// world.afterEvents.entityDie.subscribe((data) => {
+//     world.sendMessage("test");
+// });
+
+world.afterEvents.entityHurt.subscribe((data) => {
+    data.hurtEntity.applyDamage(1000);
+    // world.sendMessage(data.damageSource.damagingEntity.nameTag)
+});
+// world.afterEvents.entityHitEntity.subscribe((data) => {
+//     // notify a player they don't have permissions to hurt entities
+//     // preventing players from doing such action will be handeled by the runInterval loop
+//     world.sendMessage("entity hit");
+//     world.sendMessage("" + data.damagingEntity.nameTag);
+//     // var player = undefined
+
+//     // if (data.damagingEntity.typeId == "minecraft:player"){
+
+//     // }
+
+//     // for (var player of Object.keys(database)) {
+//     //     var claims = database[player]["claims"]
+
+//     //     for (var claim of Object.keys(claims)) {
+//     //         // if player is in claim
+//     //         data.damagingEntity.sendMess
+//     //         if ((data.damagingEntity.typeId == "minecraft:player"))
+//     //     }
+//     // }
+// });
 
 // runs code every 1 second
 system.runInterval(() => {
