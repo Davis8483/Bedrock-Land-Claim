@@ -1,6 +1,6 @@
 {
 	"type": "minecraftBedrock",
-	"name": "Land Claim §cV4",
+	"name": "Shovel Land Claim",
 	"namespace": "lca",
 	"authors": [
 		"Noah Davis"
@@ -37,7 +37,7 @@
 			[
 				"simpleRewrite",
 				{
-					"packName": "LCA V4"
+					"packName": "Shovel Land Claim"
 				}
 			]
 		]
