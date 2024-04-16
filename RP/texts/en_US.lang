@@ -3,6 +3,7 @@ item.spawn_egg.entity.lca:first_point.name=Spawn First Land Selection Point
 entity.lca:first_point.name=First Land Selection Point
 
 chat.prefix=[§eLCA§r]
+chat.shovel:dimension_warning=§cYou can only create claims in the overworld§r
 chat.claim:name_required=§cYou must provide a name!§r
 chat.claim:use_unique_name=§cYou can't use the name of an existing claim!§r
 chat.claim:created=§aClaim created!§r
@@ -11,7 +12,11 @@ chat.claim:sold=§cClaim sold.§r
 chat.claim:intersecting=§cA claim is already here!§r
 chat.claim:updated=§aClaim config has been saved!§r
 chat.claim.point:selected=First point selected
-chat.claim.point:hint=§bCrouch click to create claim!§r
+chat.claim.point:hint=§bCrouch click to set a second point!§r
+
+chat.claim.permission:break_blocks=§cYou're not allowed to break blocks!§r
+chat.claim.permission:use_item_on_block=§cYou're not allowed to use items on blocks!§r
+chat.claim.permission:use_tnt=§cYou're not allowed to use tnt!§r
 
 ui.global.button:back=Back
 
