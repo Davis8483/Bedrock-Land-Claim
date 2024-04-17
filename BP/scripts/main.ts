@@ -115,6 +115,21 @@ function hasPermission(claim: {}, permission: string, player: Player = undefined
     return (false);
 }
 
+/**
+ * Runs the callback for every claim saved in the database
+ */
+function runInClaims(callback: (playerName: string, claim: {}) => void) {
+
+    for (var playerName of Object.keys(database)) {
+        var claims = database[playerName]["claims"]
+
+        for (var claimName of Object.keys(claims)) {
+            // world.sendMessage(claimName)
+            callback(playerName, claims[claimName]);
+        }
+    }
+}
+
 class Ui {
     // player selected icons for their claims
     static claimIcons = {
@@ -387,23 +402,17 @@ world.afterEvents.itemUse.subscribe((data) => {
 
 world.beforeEvents.itemUseOn.subscribe((data) => {
     if (data.block.dimension == world.getDimension("overworld")) {
-        for (var player of Object.keys(database)) {
-            var claims = database[player]["claims"]
+        runInClaims((playerName, claim) => {
+            // check if a block is broken by a player without permissions within the claim
+            if (doOverlap(claim["start"], claim["end"], data.block, data.block) && (playerName != data.source.name) && !hasPermission(claim, "use-items-on-blocks", data.source)) {
+                data.cancel = true;
 
-            for (var claim of Object.keys(claims)) {
-
-                // check if a block is broken by a player without permissions within the claim
-                if (doOverlap(claims[claim]["start"], claims[claim]["end"], data.block, data.block) && (player != data.source.name) && !hasPermission(claims[claim], "use-items-on-blocks", data.source)) {
-                    data.cancel = true;
-
-                    system.run(() => {
-                        sendNotification(data.source, "chat.claim.permission:use_item_on_block");
-                        data.source.playSound("note.didgeridoo");
-                    })
-                    break;
-                }
+                system.run(() => {
+                    sendNotification(data.source, "chat.claim.permission:use_item_on_block");
+                    data.source.playSound("note.didgeridoo");
+                })
             }
-        }
+        });
     }
 });
 
@@ -441,15 +450,11 @@ world.beforeEvents.playerBreakBlock.subscribe((data) => {
                 var intersectingClaim = false;
 
                 // make sure new claim isn't intersecting others
-                for (var player of Object.keys(database)) {
-                    var claims = database[player]["claims"]
-
-                    for (var claim of Object.keys(claims)) {
-                        if (doOverlap(claims[claim]["start"], claims[claim]["end"], firstPoint, secondPoint)) {
-                            intersectingClaim = true;
-                        }
+                runInClaims((playerName, claim) => {
+                    if (doOverlap(claim["start"], claim["end"], firstPoint, secondPoint)) {
+                        intersectingClaim = true;
                     }
-                }
+                });
 
                 if (intersectingClaim) {
                     sendNotification(data.player, "chat.claim:intersecting")
@@ -482,23 +487,17 @@ world.beforeEvents.playerBreakBlock.subscribe((data) => {
     }
     else {
         if (data.dimension == world.getDimension("overworld")) {
-            for (var player of Object.keys(database)) {
-                var claims = database[player]["claims"]
+            runInClaims((playerName, claim) => {
+                // check if a block is broken by a player without permissions within the claim
+                if (doOverlap(claim["start"], claim["end"], data.block, data.block) && (playerName != data.player.name) && !hasPermission(claim, "break-blocks", data.player)) {
+                    data.cancel = true;
 
-                for (var claim of Object.keys(claims)) {
-
-                    // check if a block is broken by a player without permissions within the claim
-                    if (doOverlap(claims[claim]["start"], claims[claim]["end"], data.block, data.block) && (player != data.player.name) && !hasPermission(claims[claim], "break-blocks", data.player)) {
-                        data.cancel = true;
-
-                        system.run(() => {
-                            sendNotification(data.player, "chat.claim.permission:break_blocks");
-                            data.player.playSound("note.didgeridoo");
-                        })
-                        break;
-                    }
+                    system.run(() => {
+                        sendNotification(data.player, "chat.claim.permission:break_blocks");
+                        data.player.playSound("note.didgeridoo");
+                    })
                 }
-            }
+            });
         }
     }
 });
@@ -519,28 +518,24 @@ world.beforeEvents.explosion.subscribe((data) => {
         }
 
         // check if tnt blast effects a claim
-        for (var player of Object.keys(database)) {
-            var claims = database[player]["claims"]
+        runInClaims((playerName, claim) => {
 
-            for (var claim of Object.keys(claims)) {
+            // if entity is a mob or player doesn't have permissions
+            if ((data.source.typeId != "minecraft:tnt") || !((closestPlayer.name == playerName) || hasPermission(claim, "use-tnt", closestPlayer))) {
+                // remove all impacted blocks that lie within a claim
+                for (var i = 0; i < impactedBlocks.length; i++) {
+                    var block = impactedBlocks[i]
 
-                // if entity is a mob or player doesn't have permissions
-                if ((data.source.typeId != "minecraft:tnt") || !((closestPlayer.name == player) || hasPermission(claims[claim], "use-tnt", closestPlayer))) {
-                    // remove all impacted blocks that lie within a claim
-                    for (var i = 0; i < impactedBlocks.length; i++) {
-                        var block = impactedBlocks[i]
+                    if (doOverlap(claim["start"], claim["end"], block, block)) {
+                        // remove the block
+                        impactedBlocks.splice(impactedBlocks.indexOf(block), 1);
 
-                        if (doOverlap(claims[claim]["start"], claims[claim]["end"], block, block)) {
-                            // remove the block
-                            impactedBlocks.splice(impactedBlocks.indexOf(block), 1);
-
-                            // account for deletion
-                            i--;
-                        }
+                        // account for deletion
+                        i--;
                     }
                 }
             }
-        }
+        });
 
         // update impacted blocks
         data.setImpactedBlocks(impactedBlocks);
@@ -562,95 +557,88 @@ world.beforeEvents.itemUse.subscribe((data) => {
     var disallowedItems = ["minecraft:splash_potion", "minecraft:lingering_potion", "minecraft:bow"]
 
     if (disallowedItems.includes(data.itemStack.typeId) && (data.source.dimension == world.getDimension("overworld"))) {
-        for (var player of Object.keys(database)) {
-            var claims = database[player]["claims"]
-            for (var claim of Object.keys(claims)) {
+        runInClaims((playerName, claim) => {
 
-                // if player has used the disallowed item in a claim
-                if (doOverlap(claims[claim]["start"], claims[claim]["end"], data.source.location, data.source.location) && (player != data.source.name) && !hasPermission(claims[claim], "hurt-entities", data.source)) {
+            // if player has used the disallowed item in a claim
+            if (doOverlap(claim["start"], claim["end"], data.source.location, data.source.location) && (playerName != data.source.name) && !hasPermission(claim, "hurt-entities", data.source)) {
 
-                    // cancel the action
-                    data.cancel = true;
+                // cancel the action
+                data.cancel = true;
 
-                    // notify player they don't have permissions
-                    system.run(() => {
-                        sendNotification(data.source, "chat.claim.permission:hurt_entities");
-                        data.source.playSound("note.didgeridoo");
-                    })
-                }
+                // notify player they don't have permissions
+                system.run(() => {
+                    sendNotification(data.source, "chat.claim.permission:hurt_entities");
+                    data.source.playSound("note.didgeridoo");
+                })
             }
-        }
+        });
     }
 })
 
 // runs code every 1 second
 system.runInterval(() => {
 
-    for (var player of Object.keys(database)) {
-        var claims = database[player]["claims"]
+    runInClaims((playerName, claim) => {
 
-        for (var claim of Object.keys(claims)) {
+        // create claim particles -------------------------------------------------------------------------------------
 
-            // create claim particles -------------------------------------------------------------------------------------
+        // user defined start and end points of the claim
+        var start = claim["start"];
+        var end = claim["end"];
 
-            // user defined start and end points of the claim
-            var start = claims[claim]["start"];
-            var end = claims[claim]["end"];
+        // all 4 points of the claim
+        var points = [
+            [[start["x"], start["z"]], [start["x"], end["z"]]],
+            [[end["x"], start["z"]], [end["x"], end["z"]]]
+        ]
 
-            // all 4 points of the claim
-            var points = [
-                [[start["x"], start["z"]], [start["x"], end["z"]]],
-                [[end["x"], start["z"]], [end["x"], end["z"]]]
-            ]
+        var averageY = (start["y"] + end["y"]) / 2
+        var numSegments = 3 // the number of border particle segments to generate above and below the average y level
+        var segmentHeight = 10
+        var averageOffset = (segmentHeight * numSegments)
 
-            var averageY = (start["y"] + end["y"]) / 2
-            var numSegments = 3 // the number of border particle segments to generate above and below the average y level
-            var segmentHeight = 10
-            var averageOffset = (segmentHeight * numSegments)
+        // only render if particles are enabled
+        if (claim["particles"]) {
+            // loop through all claim points to determine particle type
+            for (var a = 0; a < points.length; a++) {
+                for (var b = 0; b < points[a].length; b++) {
 
-            // only render if particles are enabled
-            if (claims[claim]["particles"]) {
-                // loop through all claim points to determine particle type
-                for (var a = 0; a < points.length; a++) {
-                    for (var b = 0; b < points[a].length; b++) {
+                    // only render if claim point is in render distance
+                    if (world.getDimension("overworld").getBlock({ "x": points[a][b][0], "y": averageY, "z": points[a][b][1] }) != undefined) {
 
-                        // only render if claim point is in render distance
-                        if (world.getDimension("overworld").getBlock({ "x": points[a][b][0], "y": averageY, "z": points[a][b][1] }) != undefined) {
-
-                            // creates sets of verticle claim particles 20 blocks below and above the claim
-                            for (var i = averageY - averageOffset; i <= averageY + averageOffset; i += segmentHeight) {
-                                if (points[a][b][0] > points[a ^ 1][b][0]) {
-                                    var xParticleType = "lca:negx_claim_dust";
-                                }
-                                else {
-                                    var xParticleType = "lca:posx_claim_dust";
-                                }
-
-                                if (points[a][b][1] > points[a][b ^ 1][1]) {
-                                    var yParticleType = "lca:negz_claim_dust";
-                                }
-                                else {
-                                    var yParticleType = "lca:posz_claim_dust";
-                                }
-                                world.getDimension("overworld").runCommand(`particle ${xParticleType} ${points[a][b][0]} ${i} ${points[a][b][1]}`);
-                                world.getDimension("overworld").runCommand(`particle ${yParticleType} ${points[a][b][0]} ${i} ${points[a][b][1]}`);
-                                world.getDimension("overworld").runCommand(`particle lca:rising_claim_dust ${points[a][b][0]} ${i} ${points[a][b][1]}`);
-                                world.getDimension("overworld").runCommand(`particle lca:falling_claim_dust ${points[a][b][0]} ${i} ${points[a][b][1]}`);
+                        // creates sets of verticle claim particles 20 blocks below and above the claim
+                        for (var i = averageY - averageOffset; i <= averageY + averageOffset; i += segmentHeight) {
+                            if (points[a][b][0] > points[a ^ 1][b][0]) {
+                                var xParticleType = "lca:negx_claim_dust";
                             }
+                            else {
+                                var xParticleType = "lca:posx_claim_dust";
+                            }
+
+                            if (points[a][b][1] > points[a][b ^ 1][1]) {
+                                var yParticleType = "lca:negz_claim_dust";
+                            }
+                            else {
+                                var yParticleType = "lca:posz_claim_dust";
+                            }
+                            world.getDimension("overworld").runCommand(`particle ${xParticleType} ${points[a][b][0]} ${i} ${points[a][b][1]}`);
+                            world.getDimension("overworld").runCommand(`particle ${yParticleType} ${points[a][b][0]} ${i} ${points[a][b][1]}`);
+                            world.getDimension("overworld").runCommand(`particle lca:rising_claim_dust ${points[a][b][0]} ${i} ${points[a][b][1]}`);
+                            world.getDimension("overworld").runCommand(`particle lca:falling_claim_dust ${points[a][b][0]} ${i} ${points[a][b][1]}`);
                         }
                     }
                 }
             }
+        }
 
-            // prevent harming entities in a claim -----------------------------------------------------------------
-            for (var p of world.getAllPlayers()) {
+        // prevent harming entities in a claim -----------------------------------------------------------------
+        for (var p of world.getAllPlayers()) {
 
-                // if player is in the claim
-                if (doOverlap(start, end, p.location, p.location) && (player != p.name) && !hasPermission(claims[claim], "hurt-entities", p)) {
-                    p.addEffect("weakness", 40, { "amplifier": 255, "showParticles": false });
-                }
+            // if player is in the claim
+            if (doOverlap(start, end, p.location, p.location) && (playerName != p.name) && !hasPermission(claim, "hurt-entities", p)) {
+                p.addEffect("weakness", 40, { "amplifier": 255, "showParticles": false });
             }
         }
-    }
+    });
 }, 20);
 
