@@ -1,4 +1,4 @@
-import { world, system, Player, Vector3, EntityQueryOptions } from '@minecraft/server';
+import { world, system, Player, Vector3 } from '@minecraft/server';
 import { ActionFormData, MessageFormData, ModalFormData } from '@minecraft/server-ui';
 
 const shovelID = "lca:claim_shovel"
@@ -400,6 +400,7 @@ world.beforeEvents.itemUseOn.subscribe((data) => {
                         sendNotification(data.source, "chat.claim.permission:use_item_on_block");
                         data.source.playSound("note.didgeridoo");
                     })
+                    break;
                 }
             }
         }
@@ -494,7 +495,7 @@ world.beforeEvents.playerBreakBlock.subscribe((data) => {
                             sendNotification(data.player, "chat.claim.permission:break_blocks");
                             data.player.playSound("note.didgeridoo");
                         })
-
+                        break;
                     }
                 }
             }
@@ -511,7 +512,7 @@ world.beforeEvents.explosion.subscribe((data) => {
         var closestPlayer: Player = undefined;
 
         // find player closest to the explosion, we'll assume this is the player that placed the tnt
-        for (var p of world.getPlayers()) {
+        for (var p of world.getAllPlayers()) {
             if ((closestPlayer == undefined) || (Math.cbrt(Math.pow(p.location.x, 3) + Math.pow(p.location.y, 3) + Math.pow(p.location.z, 3)) < (Math.cbrt(Math.pow(closestPlayer.location.x, 3) + Math.pow(closestPlayer.location.y, 3) + Math.pow(closestPlayer.location.z, 3))))) {
                 closestPlayer = p;
             }
@@ -523,11 +524,8 @@ world.beforeEvents.explosion.subscribe((data) => {
 
             for (var claim of Object.keys(claims)) {
 
-                world.sendMessage("" + (data.source.typeId != "minecraft:tnt"))
-
                 // if entity is a mob or player doesn't have permissions
                 if ((data.source.typeId != "minecraft:tnt") || !((closestPlayer.name == player) || hasPermission(claims[claim], "use-tnt", closestPlayer))) {
-                    world.sendMessage("hi")
                     // remove all impacted blocks that lie within a claim
                     for (var i = 0; i < impactedBlocks.length; i++) {
                         var block = impactedBlocks[i]
@@ -557,44 +555,44 @@ world.beforeEvents.explosion.subscribe((data) => {
 
     }
 });
-// world.afterEvents.entityDie.subscribe((data) => {
-//     world.sendMessage("test");
-// });
 
-world.afterEvents.entityHurt.subscribe((data) => {
-    data.hurtEntity.applyDamage(1000);
-    // world.sendMessage(data.damageSource.damagingEntity.nameTag)
-});
-// world.afterEvents.entityHitEntity.subscribe((data) => {
-//     // notify a player they don't have permissions to hurt entities
-//     // preventing players from doing such action will be handeled by the runInterval loop
-//     world.sendMessage("entity hit");
-//     world.sendMessage("" + data.damagingEntity.nameTag);
-//     // var player = undefined
+world.beforeEvents.itemUse.subscribe((data) => {
 
-//     // if (data.damagingEntity.typeId == "minecraft:player"){
+    // disallowed items that could cause harm to an entity
+    var disallowedItems = ["minecraft:splash_potion", "minecraft:lingering_potion", "minecraft:bow"]
 
-//     // }
+    if (disallowedItems.includes(data.itemStack.typeId) && (data.source.dimension == world.getDimension("overworld"))) {
+        for (var player of Object.keys(database)) {
+            var claims = database[player]["claims"]
+            for (var claim of Object.keys(claims)) {
 
-//     // for (var player of Object.keys(database)) {
-//     //     var claims = database[player]["claims"]
+                // if player has used the disallowed item in a claim
+                if (doOverlap(claims[claim]["start"], claims[claim]["end"], data.source.location, data.source.location) && (player != data.source.name) && !hasPermission(claims[claim], "hurt-entities", data.source)) {
 
-//     //     for (var claim of Object.keys(claims)) {
-//     //         // if player is in claim
-//     //         data.damagingEntity.sendMess
-//     //         if ((data.damagingEntity.typeId == "minecraft:player"))
-//     //     }
-//     // }
-// });
+                    // cancel the action
+                    data.cancel = true;
+
+                    // notify player they don't have permissions
+                    system.run(() => {
+                        sendNotification(data.source, "chat.claim.permission:hurt_entities");
+                        data.source.playSound("note.didgeridoo");
+                    })
+                }
+            }
+        }
+    }
+})
 
 // runs code every 1 second
 system.runInterval(() => {
 
-    // create particles
     for (var player of Object.keys(database)) {
         var claims = database[player]["claims"]
 
         for (var claim of Object.keys(claims)) {
+
+            // create claim particles -------------------------------------------------------------------------------------
+
             // user defined start and end points of the claim
             var start = claims[claim]["start"];
             var end = claims[claim]["end"];
@@ -641,6 +639,15 @@ system.runInterval(() => {
                             }
                         }
                     }
+                }
+            }
+
+            // prevent harming entities in a claim -----------------------------------------------------------------
+            for (var p of world.getAllPlayers()) {
+
+                // if player is in the claim
+                if (doOverlap(start, end, p.location, p.location) && (player != p.name) && !hasPermission(claims[claim], "hurt-entities", p)) {
+                    p.addEffect("weakness", 40, { "amplifier": 255, "showParticles": false });
                 }
             }
         }
