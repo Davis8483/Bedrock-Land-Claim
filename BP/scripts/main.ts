@@ -610,31 +610,35 @@ system.runInterval(() => {
             var segmentHeight = 10
             var averageOffset = (segmentHeight * numSegments)
 
-            // only render particle if claim is loaded and particles are enabled
-            if ((world.getDimension("overworld").getBlock(start) != undefined) && (claims[claim]["particles"])) {
+            // only render if particles are enabled
+            if (claims[claim]["particles"]) {
                 // loop through all claim points to determine particle type
                 for (var a = 0; a < points.length; a++) {
                     for (var b = 0; b < points[a].length; b++) {
 
-                        // creates sets of verticle claim particles 20 blocks below and above the claim
-                        for (var i = averageY - averageOffset; i <= averageY + averageOffset; i += segmentHeight) {
-                            if (points[a][b][0] > points[a ^ 1][b][0]) {
-                                var xParticleType = "lca:negx_claim_particle";
-                            }
-                            else {
-                                var xParticleType = "lca:posx_claim_particle";
-                            }
+                        // only render if claim point is in render distance
+                        if (world.getDimension("overworld").getBlock({ "x": points[a][b][0], "y": averageY, "z": points[a][b][1] }) != undefined) {
 
-                            if (points[a][b][1] > points[a][b ^ 1][1]) {
-                                var yParticleType = "lca:negz_claim_particle";
+                            // creates sets of verticle claim particles 20 blocks below and above the claim
+                            for (var i = averageY - averageOffset; i <= averageY + averageOffset; i += segmentHeight) {
+                                if (points[a][b][0] > points[a ^ 1][b][0]) {
+                                    var xParticleType = "lca:negx_claim_particle";
+                                }
+                                else {
+                                    var xParticleType = "lca:posx_claim_particle";
+                                }
+
+                                if (points[a][b][1] > points[a][b ^ 1][1]) {
+                                    var yParticleType = "lca:negz_claim_particle";
+                                }
+                                else {
+                                    var yParticleType = "lca:posz_claim_particle";
+                                }
+                                world.getDimension("overworld").runCommand(`particle ${xParticleType} ${points[a][b][0]} ${i} ${points[a][b][1]}`);
+                                world.getDimension("overworld").runCommand(`particle ${yParticleType} ${points[a][b][0]} ${i} ${points[a][b][1]}`);
+                                world.getDimension("overworld").runCommand(`particle lca:rising_claim_particle ${points[a][b][0]} ${i} ${points[a][b][1]}`);
+                                world.getDimension("overworld").runCommand(`particle lca:falling_claim_particle ${points[a][b][0]} ${i} ${points[a][b][1]}`);
                             }
-                            else {
-                                var yParticleType = "lca:posz_claim_particle";
-                            }
-                            world.getDimension("overworld").runCommand(`particle ${xParticleType} ${points[a][b][0]} ${i} ${points[a][b][1]}`);
-                            world.getDimension("overworld").runCommand(`particle ${yParticleType} ${points[a][b][0]} ${i} ${points[a][b][1]}`);
-                            world.getDimension("overworld").runCommand(`particle lca:rising_claim_particle ${points[a][b][0]} ${i} ${points[a][b][1]}`);
-                            world.getDimension("overworld").runCommand(`particle lca:falling_claim_particle ${points[a][b][0]} ${i} ${points[a][b][1]}`);
                         }
                     }
                 }
