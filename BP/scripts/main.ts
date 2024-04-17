@@ -575,12 +575,23 @@ world.beforeEvents.itemUse.subscribe((data) => {
     }
 })
 
-// runs code every 1 second
+// adds weakness for entity protection in claims ever 1/20th of a second
+system.runInterval(() => {
+    runInClaims((playerName, claim) => {
+        for (var p of world.getAllPlayers()) {
+
+            // if player is in the claim
+            if (doOverlap(claim["start"], claim["end"], p.location, p.location) && (playerName != p.name) && !hasPermission(claim, "hurt-entities", p)) {
+                p.addEffect("weakness", 40, { "amplifier": 255, "showParticles": false });
+            }
+        }
+    });
+}, 1);
+
+// renders claim particles every 1 second
 system.runInterval(() => {
 
     runInClaims((playerName, claim) => {
-
-        // create claim particles -------------------------------------------------------------------------------------
 
         // user defined start and end points of the claim
         var start = claim["start"];
@@ -628,15 +639,6 @@ system.runInterval(() => {
                         }
                     }
                 }
-            }
-        }
-
-        // prevent harming entities in a claim -----------------------------------------------------------------
-        for (var p of world.getAllPlayers()) {
-
-            // if player is in the claim
-            if (doOverlap(start, end, p.location, p.location) && (playerName != p.name) && !hasPermission(claim, "hurt-entities", p)) {
-                p.addEffect("weakness", 40, { "amplifier": 255, "showParticles": false });
             }
         }
     });
