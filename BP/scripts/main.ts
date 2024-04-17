@@ -620,22 +620,22 @@ system.runInterval(() => {
                             // creates sets of verticle claim particles 20 blocks below and above the claim
                             for (var i = averageY - averageOffset; i <= averageY + averageOffset; i += segmentHeight) {
                                 if (points[a][b][0] > points[a ^ 1][b][0]) {
-                                    var xParticleType = "lca:negx_claim_particle";
+                                    var xParticleType = "lca:negx_claim_dust";
                                 }
                                 else {
-                                    var xParticleType = "lca:posx_claim_particle";
+                                    var xParticleType = "lca:posx_claim_dust";
                                 }
 
                                 if (points[a][b][1] > points[a][b ^ 1][1]) {
-                                    var yParticleType = "lca:negz_claim_particle";
+                                    var yParticleType = "lca:negz_claim_dust";
                                 }
                                 else {
-                                    var yParticleType = "lca:posz_claim_particle";
+                                    var yParticleType = "lca:posz_claim_dust";
                                 }
                                 world.getDimension("overworld").runCommand(`particle ${xParticleType} ${points[a][b][0]} ${i} ${points[a][b][1]}`);
                                 world.getDimension("overworld").runCommand(`particle ${yParticleType} ${points[a][b][0]} ${i} ${points[a][b][1]}`);
-                                world.getDimension("overworld").runCommand(`particle lca:rising_claim_particle ${points[a][b][0]} ${i} ${points[a][b][1]}`);
-                                world.getDimension("overworld").runCommand(`particle lca:falling_claim_particle ${points[a][b][0]} ${i} ${points[a][b][1]}`);
+                                world.getDimension("overworld").runCommand(`particle lca:rising_claim_dust ${points[a][b][0]} ${i} ${points[a][b][1]}`);
+                                world.getDimension("overworld").runCommand(`particle lca:falling_claim_dust ${points[a][b][0]} ${i} ${points[a][b][1]}`);
                             }
                         }
                     }
