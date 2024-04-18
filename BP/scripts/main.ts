@@ -1,4 +1,4 @@
-import { world, system, Player, Vector3 } from '@minecraft/server';
+import { world, system, Player, Vector3, ItemStack, Block } from '@minecraft/server';
 import { ActionFormData, MessageFormData, ModalFormData } from '@minecraft/server-ui';
 
 const shovelID = "lca:claim_shovel"
@@ -128,6 +128,26 @@ function runInClaims(callback: (playerName: string, claim: {}) => void) {
             callback(playerName, claims[claimName]);
         }
     }
+}
+
+/**
+ * Gets the player closest to the specified block
+ * 
+ * @param blockLocation - Point to test from
+ * 
+ * @return - The player closest to the specified point
+ */
+function getClosestPlayer(blockLocation: Vector3): Player {
+    var closestPlayer: Player = undefined;
+
+    // find player closest to the specified block
+    for (var p of world.getAllPlayers()) {
+        if ((closestPlayer == undefined) || (Math.cbrt(Math.pow(p.location.x, 3) + Math.pow(p.location.y, 3) + Math.pow(p.location.z, 3)) < (Math.cbrt(Math.pow(closestPlayer.location.x, 3) + Math.pow(closestPlayer.location.y, 3) + Math.pow(closestPlayer.location.z, 3))))) {
+            closestPlayer = p;
+        }
+    }
+
+    return (closestPlayer);
 }
 
 class Ui {
@@ -508,14 +528,8 @@ world.beforeEvents.explosion.subscribe((data) => {
 
         var impactedBlocks = data.getImpactedBlocks();
 
-        var closestPlayer: Player = undefined;
-
         // find player closest to the explosion, we'll assume this is the player that placed the tnt
-        for (var p of world.getAllPlayers()) {
-            if ((closestPlayer == undefined) || (Math.cbrt(Math.pow(p.location.x, 3) + Math.pow(p.location.y, 3) + Math.pow(p.location.z, 3)) < (Math.cbrt(Math.pow(closestPlayer.location.x, 3) + Math.pow(closestPlayer.location.y, 3) + Math.pow(closestPlayer.location.z, 3))))) {
-                closestPlayer = p;
-            }
-        }
+        var closestPlayer: Player = getClosestPlayer(data.source.location);
 
         // check if tnt blast effects a claim
         runInClaims((playerName, claim) => {
@@ -550,6 +564,72 @@ world.beforeEvents.explosion.subscribe((data) => {
 
     }
 });
+
+// stop pistons from interacting with claims on the outside
+world.afterEvents.pistonActivate.subscribe((data) => {
+
+    if (data.dimension == world.getDimension("overworld") && (data.piston.getAttachedBlocks().length > 0)) {
+
+        var b = data.piston.getAttachedBlocks()[0]
+        if (data.isExpanding) {
+            var directionOffset = {
+                "x": Math.max(Math.min(b.x - data.block.x, 1), -1),
+                "y": Math.max(Math.min(b.y - data.block.y, 1), -1),
+                "z": Math.max(Math.min(b.z - data.block.z, 1), -1)
+            };
+        }
+        else {
+            var directionOffset = {
+                "x": Math.max(Math.min(data.block.x - b.x, 1), -1),
+                "y": Math.max(Math.min(data.block.y - b.y, 1), -1),
+                "z": Math.max(Math.min(data.block.z - b.z, 1), -1)
+            };
+        }
+
+        // flag to determine if piston use is allowed
+        var allowed = true;
+
+        // check if any of the blocks are in a claim
+        for (var block of data.piston.getAttachedBlocks()) {
+
+            if (data.isExpanding) {
+                var b = block.offset(directionOffset);
+            }
+
+            runInClaims((playerName, claim) => {
+
+                // if block is in claim but not piston
+                if (doOverlap(claim["start"], claim["end"], b.location, b.location) && !doOverlap(claim["start"], claim["end"], data.piston.block.location, data.piston.block.location)) {
+                    allowed = false;
+                }
+            });
+        }
+
+        // if attached block is in a claim but pistion is not, disallow the action
+        if (!allowed) {
+            for (var block of data.piston.getAttachedBlocks().reverse()) {
+                data.dimension.runCommand(`clone ${block.x + directionOffset.x} ${block.y + directionOffset.y} ${block.z + directionOffset.z} ${block.x + directionOffset.x} ${block.y + directionOffset.y} ${block.z + directionOffset.z} ${block.x} ${block.y} ${block.z} replace move`)
+            }
+
+            // remove the offending piston
+            data.dimension.runCommand(`setblock ${data.piston.block.location.x} ${data.piston.block.location.y} ${data.piston.block.location.z} air`)
+
+            // drop the piston item
+            var pistonDrop = new ItemStack(data.piston.typeId)
+            data.dimension.spawnItem(pistonDrop, data.block.location);
+
+            // get closest player to piston, we will assume they activated it
+            var closestPlayer: Player = getClosestPlayer(data.piston.block.location)
+
+            // notify player
+            system.run(() => {
+                sendNotification(closestPlayer, "chat.claim:piston");
+                closestPlayer.playSound("note.didgeridoo");
+            });
+        }
+    }
+
+})
 
 world.beforeEvents.itemUse.subscribe((data) => {
 

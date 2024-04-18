@@ -18,6 +18,7 @@ chat.claim.permission:break_blocks=§cYou're not allowed to break blocks!§r
 chat.claim.permission:use_item_on_block=§cYou're not allowed to use items on blocks!§r
 chat.claim.permission:use_tnt=§cYou're not allowed to use tnt!§r
 chat.claim.permission:hurt_entities=§cYou're not allowed to use this item!§r
+chat.claim:piston=§cYou can't use a piston from outside this claim!§r
 
 ui.global.button:back=Back
 
