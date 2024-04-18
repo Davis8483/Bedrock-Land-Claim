@@ -682,6 +682,8 @@ system.runInterval(() => {
 // renders claim particles every 1 second
 system.runInterval(() => {
 
+    var dimension = world.getDimension("overworld");
+
     runInClaims((playerName, claimName, claim) => {
 
         // user defined start and end points of the claim
@@ -706,7 +708,7 @@ system.runInterval(() => {
                 for (var b = 0; b < points[a].length; b++) {
 
                     // only render if claim point is in render distance
-                    if (world.getDimension("overworld").getBlock({ "x": points[a][b][0], "y": averageY, "z": points[a][b][1] }) != undefined) {
+                    if (dimension.getBlock({ "x": points[a][b][0], "y": averageY, "z": points[a][b][1] }) != undefined) {
 
                         // creates sets of verticle claim particles 20 blocks below and above the claim
                         for (var i = averageY - averageOffset; i <= averageY + averageOffset; i += segmentHeight) {
@@ -723,10 +725,19 @@ system.runInterval(() => {
                             else {
                                 var yParticleType = "lca:posz_claim_dust";
                             }
-                            world.getDimension("overworld").runCommand(`particle ${xParticleType} ${points[a][b][0]} ${i} ${points[a][b][1]}`);
-                            world.getDimension("overworld").runCommand(`particle ${yParticleType} ${points[a][b][0]} ${i} ${points[a][b][1]}`);
-                            world.getDimension("overworld").runCommand(`particle lca:rising_claim_dust ${points[a][b][0]} ${i} ${points[a][b][1]}`);
-                            world.getDimension("overworld").runCommand(`particle lca:falling_claim_dust ${points[a][b][0]} ${i} ${points[a][b][1]}`);
+
+                            var particlePoint = { "x": points[a][b][0], "y": i, "z": points[a][b][1] };
+
+                            try {
+                                dimension.spawnParticle(xParticleType, particlePoint);
+                                dimension.spawnParticle(yParticleType, particlePoint);
+                                dimension.spawnParticle("lca:rising_claim_dust", particlePoint);
+                                dimension.spawnParticle("lca:falling_claim_dust", particlePoint);
+                            }
+                            catch {
+                                // do nothing
+                            }
+
                         }
                     }
                 }
