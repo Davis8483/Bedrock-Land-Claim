@@ -118,14 +118,14 @@ function hasPermission(claim: {}, permission: string, player: Player = undefined
 /**
  * Runs the callback for every claim saved in the database
  */
-function runInClaims(callback: (playerName: string, claim: {}) => void) {
+function runInClaims(callback: (playerName: string, claimName: string, claimData: {}) => void) {
 
     for (var playerName of Object.keys(database)) {
         var claims = database[playerName]["claims"]
 
         for (var claimName of Object.keys(claims)) {
             // world.sendMessage(claimName)
-            callback(playerName, claims[claimName]);
+            callback(playerName, claimName, claims[claimName]);
         }
     }
 }
@@ -422,7 +422,7 @@ world.afterEvents.itemUse.subscribe((data) => {
 
 world.beforeEvents.itemUseOn.subscribe((data) => {
     if (data.block.dimension == world.getDimension("overworld")) {
-        runInClaims((playerName, claim) => {
+        runInClaims((playerName, claimName, claim) => {
             // check if a block is broken by a player without permissions within the claim
             if (doOverlap(claim["start"], claim["end"], data.block, data.block) && (playerName != data.source.name) && !hasPermission(claim, "use-items-on-blocks", data.source)) {
                 data.cancel = true;
@@ -470,7 +470,7 @@ world.beforeEvents.playerBreakBlock.subscribe((data) => {
                 var intersectingClaim = false;
 
                 // make sure new claim isn't intersecting others
-                runInClaims((playerName, claim) => {
+                runInClaims((playerName, claimName, claim) => {
                     if (doOverlap(claim["start"], claim["end"], firstPoint, secondPoint)) {
                         intersectingClaim = true;
                     }
@@ -507,7 +507,7 @@ world.beforeEvents.playerBreakBlock.subscribe((data) => {
     }
     else {
         if (data.dimension == world.getDimension("overworld")) {
-            runInClaims((playerName, claim) => {
+            runInClaims((playerName, claimName, claim) => {
                 // check if a block is broken by a player without permissions within the claim
                 if (doOverlap(claim["start"], claim["end"], data.block, data.block) && (playerName != data.player.name) && !hasPermission(claim, "break-blocks", data.player)) {
                     data.cancel = true;
@@ -532,7 +532,7 @@ world.beforeEvents.explosion.subscribe((data) => {
         var closestPlayer: Player = getClosestPlayer(data.source.location);
 
         // check if tnt blast effects a claim
-        runInClaims((playerName, claim) => {
+        runInClaims((playerName, claimName, claim) => {
 
             // if entity is a mob or player doesn't have permissions
             if ((data.source.typeId != "minecraft:tnt") || !((closestPlayer.name == playerName) || hasPermission(claim, "use-tnt", closestPlayer))) {
@@ -596,7 +596,7 @@ world.afterEvents.pistonActivate.subscribe((data) => {
                 var b = block.offset(directionOffset);
             }
 
-            runInClaims((playerName, claim) => {
+            runInClaims((playerName, claimName, claim) => {
 
                 // if block is in claim but not piston
                 if (doOverlap(claim["start"], claim["end"], b.location, b.location) && !doOverlap(claim["start"], claim["end"], data.piston.block.location, data.piston.block.location)) {
@@ -637,7 +637,7 @@ world.beforeEvents.itemUse.subscribe((data) => {
     var disallowedItems = ["minecraft:splash_potion", "minecraft:lingering_potion", "minecraft:bow"]
 
     if (disallowedItems.includes(data.itemStack.typeId) && (data.source.dimension == world.getDimension("overworld"))) {
-        runInClaims((playerName, claim) => {
+        runInClaims((playerName, claimName, claim) => {
 
             // if player has used the disallowed item in a claim
             if (doOverlap(claim["start"], claim["end"], data.source.location, data.source.location) && (playerName != data.source.name) && !hasPermission(claim, "hurt-entities", data.source)) {
@@ -655,14 +655,25 @@ world.beforeEvents.itemUse.subscribe((data) => {
     }
 })
 
-// adds weakness for entity protection in claims ever 1/20th of a second
+// player management in claims, runs every 1/20th of a second
 system.runInterval(() => {
-    runInClaims((playerName, claim) => {
+    runInClaims((playerName, claimName, claim) => {
         for (var p of world.getAllPlayers()) {
 
             // if player is in the claim
-            if (doOverlap(claim["start"], claim["end"], p.location, p.location) && (playerName != p.name) && !hasPermission(claim, "hurt-entities", p)) {
-                p.addEffect("weakness", 40, { "amplifier": 255, "showParticles": false });
+            if (doOverlap(claim["start"], claim["end"], p.location, p.location)) {
+
+                // make sure player can't hurt entities if they don't have permission
+                if ((playerName != p.name) && !hasPermission(claim, "hurt-entities", p))
+                    p.addEffect("weakness", 40, { "amplifier": 255, "showParticles": false });
+
+                // show claim name and owner onscreen
+                p.onScreenDisplay.setActionBar(
+                    {
+                        "rawtext": [
+                            { "text": `§5${claimName}§r - ${playerName}` },
+                        ]
+                    });
             }
         }
     });
@@ -671,7 +682,7 @@ system.runInterval(() => {
 // renders claim particles every 1 second
 system.runInterval(() => {
 
-    runInClaims((playerName, claim) => {
+    runInClaims((playerName, claimName, claim) => {
 
         // user defined start and end points of the claim
         var start = claim["start"];
