@@ -634,7 +634,7 @@ world.afterEvents.pistonActivate.subscribe((data) => {
 world.beforeEvents.itemUse.subscribe((data) => {
 
     // disallowed items that could cause harm to an entity
-    var disallowedItems = ["minecraft:splash_potion", "minecraft:lingering_potion", "minecraft:bow"]
+    var disallowedItems = ["minecraft:splash_potion", "minecraft:lingering_potion", "minecraft:bow", "minecraft:crossbow"]
 
     if (disallowedItems.includes(data.itemStack.typeId) && (data.source.dimension == world.getDimension("overworld"))) {
         runInClaims((playerName, claimName, claim) => {
