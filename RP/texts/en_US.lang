@@ -11,8 +11,14 @@ chat.claim:no_claims=§cYou don't have any claims!§r
 chat.claim:sold=§cClaim sold.§r
 chat.claim:intersecting=§cA claim is already here!§r
 chat.claim:updated=§aClaim config has been saved!§r
-chat.claim.point:selected=First point selected
-chat.claim.point:hint=§bCrouch click to set a second point!§r
+chat.claim:resized=§aClaim has been resized!§r
+
+
+chat.point.new:selected=First point selected
+chat.point.resize:selected=Claim corner selected
+chat.point.resize:disallowed=§cYou must be the owner to resize a claim!§r
+chat.point.new:hint=§bCrouch click a second point to create a claim!§r
+chat.point.resize:hint=§dCrouch click a second point to resize claim!§r
 
 chat.claim.permission:break_blocks=§cYou're not allowed to break blocks!§r
 chat.claim.permission:use_item_on_block=§cYou're not allowed to use items on blocks!§r
@@ -44,6 +50,11 @@ ui.manage.config:title=Claim Config
 
 ui.claim.new:title=New Claim
 
+ui.claim.resize:title=Resize Claim
+ui.claim.resize:body=Are you sure you want to resize this claim?
+ui.claim.resize.button:cancel=Cancel
+ui.claim.resize.button:resize=§dResize Claim§r
+
 ui.claim.config.textbox:name=Name
 ui.claim.config:name_placeholder=Ex: Home
 ui.claim.config.dropdown:icon=Icon 
@@ -55,3 +66,5 @@ ui.claim.icons:bed=Bed
 ui.claim.icons:farmland=Farmland
 ui.claim.icons:weapons=Weapons
 ui.claim.icons:flowers=Flowers
+
+actionbar.claim:name_color=§5

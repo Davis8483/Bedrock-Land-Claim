@@ -1,28 +1,28 @@
 $formatVersion: 1
 #manifest
-projects/Bedrock-Land-Claim/BP/manifest.json|1713208515
+projects/LCA V4/BP/manifest.json|1713209860
 #unknown
-projects/Bedrock-Land-Claim/BP/pack_icon.png|1713207868
-projects/Bedrock-Land-Claim/RP/pack_icon.png|1713207868
+projects/LCA V4/BP/pack_icon.png|1713209860
+projects/LCA V4/RP/pack_icon.png|1713209860
 #gameTest
-projects/Bedrock-Land-Claim/BP/scripts/main.ts|1713451057
+projects/LCA V4/BP/scripts/main.ts|1713503660
 #item
-projects/Bedrock-Land-Claim/BP/items/claim_shovel.json|1713187821|{"identifier":["lca:claim_shovel"],"itemTexture":["lca_claim_shovel"],"tag":[]}
-#langDef
-projects/Bedrock-Land-Claim/RP/texts/languages.json|1712924744
+projects/LCA V4/BP/items/claim_shovel.json|1713152597|{"identifier":["lca:claim_shovel"],"itemTexture":["lca_claim_shovel"],"tag":[]}
 #clientManifest
-projects/Bedrock-Land-Claim/RP/manifest.json|1713208527|{"uuid":["2b221639-32d8-4f99-b64b-461337fdec3d"]}
+projects/LCA V4/RP/manifest.json|1713209860|{"uuid":["2b221639-32d8-4f99-b64b-461337fdec3d"]}
+#langDef
+projects/LCA V4/RP/texts/languages.json|1712779706
 #clientLang
-projects/Bedrock-Land-Claim/RP/texts/en_US.lang|1713442381|{"actionText":[]}
+projects/LCA V4/RP/texts/en_US.lang|1713502869543|{"actionText":[]}
 #texture
-projects/Bedrock-Land-Claim/RP/textures/particles/first_point.png|1712924744
-projects/Bedrock-Land-Claim/RP/textures/items/claim_shovel.png|1712924744
+projects/LCA V4/RP/textures/items/claim_shovel.png|1712779706
+projects/LCA V4/RP/textures/particles/first_point.png|1712779706
 #itemTexture
-projects/Bedrock-Land-Claim/RP/textures/item_texture.json|1713442381|{"texture":["lca_claim_shovel"],"texturePath":["projects/Bedrock-Land-Claim/RP/textures/items/claim_shovel.png"]}
+projects/LCA V4/RP/textures/item_texture.json|1713317404|{"texture":["lca_claim_shovel"],"texturePath":["projects/LCA V4/RP/textures/items/claim_shovel.png"]}
 #particle
-projects/Bedrock-Land-Claim/RP/particles/negx_claim_dust.particle.json|1713442381|{"identifier":["lca:negx_claim_dust"],"texturePath":[]}
-projects/Bedrock-Land-Claim/RP/particles/posx_claim_dust.particle.json|1713442381|{"identifier":["lca:posx_claim_dust"],"texturePath":[]}
-projects/Bedrock-Land-Claim/RP/particles/posz_claim_dust.particle.json|1713442381|{"identifier":["lca:posz_claim_dust"],"texturePath":[]}
-projects/Bedrock-Land-Claim/RP/particles/rising_claim_dust.particle.json|1713442381|{"identifier":["lca:rising_claim_dust"],"texturePath":[]}
-projects/Bedrock-Land-Claim/RP/particles/negsz_claim_dust.particle.json|1713442381|{"identifier":["lca:negz_claim_dust"],"texturePath":[]}
-projects/Bedrock-Land-Claim/RP/particles/falling_claim_dust.particle.json|1713442381|{"identifier":["lca:falling_claim_dust"],"texturePath":[]}
+projects/LCA V4/RP/particles/negsz_claim_dust.particle.json|1713385377|{"identifier":["lca:negz_claim_dust"],"texturePath":[]}
+projects/LCA V4/RP/particles/negx_claim_dust.particle.json|1713385382|{"identifier":["lca:negx_claim_dust"],"texturePath":[]}
+projects/LCA V4/RP/particles/falling_claim_dust.particle.json|1713408840|{"identifier":["lca:falling_claim_dust"],"texturePath":[]}
+projects/LCA V4/RP/particles/posx_claim_dust.particle.json|1713385387|{"identifier":["lca:posx_claim_dust"],"texturePath":[]}
+projects/LCA V4/RP/particles/posz_claim_dust.particle.json|1713385391|{"identifier":["lca:posz_claim_dust"],"texturePath":[]}
+projects/LCA V4/RP/particles/rising_claim_dust.particle.json|1713385408|{"identifier":["lca:rising_claim_dust"],"texturePath":[]}
