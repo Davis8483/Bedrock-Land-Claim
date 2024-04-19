@@ -726,7 +726,7 @@ system.runInterval(() => {
                                 var yParticleType = "lca:posz_claim_dust";
                             }
 
-                            var particlePoint = { "x": points[a][b][0], "y": i, "z": points[a][b][1] };
+                            var particlePoint: Vector3 = { "x": points[a][b][0] + 0.5, "y": i + 0.5, "z": points[a][b][1] + 0.5 };
 
                             try {
                                 dimension.spawnParticle(xParticleType, particlePoint);
