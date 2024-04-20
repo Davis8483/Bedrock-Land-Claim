@@ -2,7 +2,7 @@ item.lca:claim_shovel=Claim Shovel
 item.spawn_egg.entity.lca:first_point.name=Spawn First Land Selection Point
 entity.lca:first_point.name=First Land Selection Point
 
-chat.prefix=[§eLCA§r]
+chat.prefix=[§5SLC§r]
 chat.shovel:dimension_warning=§cYou can only create claims in the overworld§r
 chat.claim:name_required=§cYou must provide a name!§r
 chat.claim:use_unique_name=§cYou can't use the name of an existing claim!§r
