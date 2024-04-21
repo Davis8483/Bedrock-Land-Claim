@@ -2,6 +2,7 @@ import { world, system, Player, Vector3, ItemStack, Block } from '@minecraft/ser
 import { ActionFormData, MessageFormData, ModalFormData } from '@minecraft/server-ui';
 
 const shovelID = "lca:claim_shovel"
+
 const claimIcons = {
 
     // name: path
@@ -13,6 +14,7 @@ const claimIcons = {
 };
 
 const dbPlayerDefault = {
+    "in-claim": false,
     "first-point": {
         "x": 0,
         "y": 0,
@@ -777,15 +779,24 @@ world.beforeEvents.itemUse.subscribe((data) => {
 
 // player management in claims, runs every 1/20th of a second
 system.runInterval(() => {
-    runInClaims((playerName, claimName, claim) => {
-        for (var p of world.getAllPlayers()) {
+    for (var p of world.getAllPlayers()) {
+        // capture the state of player attribute "in-claim" before it is updated
+        var inClaimOld: boolean = database[p.name]["in-claim"];
+
+        // set flag to false before for loop updates it
+        database[p.name]["in-claim"] = false;
+
+        runInClaims((playerName, claimName, claim) => {
 
             // if player is in the claim
             if (doOverlap(claim["start"], claim["end"], p.location, p.location)) {
 
+                database[p.name]["in-claim"] = true
+
                 // make sure player can't hurt entities if they don't have permission
-                if ((playerName != p.name) && !hasPermission(claim, "hurt-entities", p))
+                if ((playerName != p.name) && !hasPermission(claim, "hurt-entities", p)) {
                     p.addEffect("weakness", 40, { "amplifier": 255, "showParticles": false });
+                }
 
                 // show claim name and owner onscreen
                 p.onScreenDisplay.setActionBar(
@@ -796,8 +807,17 @@ system.runInterval(() => {
                         ]
                     });
             }
+        });
+
+        // player has entered claim
+        if (!inClaimOld && database[p.name]["in-claim"]) {
+            p.playSound("random.door_open")
         }
-    });
+        // player has exited the claim
+        else if (inClaimOld && !database[p.name]["in-claim"]) {
+            p.playSound("random.door_close")
+        }
+    }
 }, 1);
 
 // renders claim particles every 1 second
