@@ -398,7 +398,9 @@ class Ui {
         }
 
         // find a reasonable height to position the camera at
-        var height = Math.sqrt((points[3][0] ** 2) + (points[3][1]) ** 2) / 2
+        var width = Math.abs(start["x"] - end["x"]);
+        var length = Math.abs(start["z"] - end["z"]);
+        var height = Math.sqrt((width ** 2) + (length ** 2)) / 2;
 
         // camera parameters
         var cornerView: CameraSetPosOptions = {
