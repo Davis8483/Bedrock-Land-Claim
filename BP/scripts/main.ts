@@ -1,4 +1,4 @@
-import { world, system, Player, Vector3, ItemStack, Block } from '@minecraft/server';
+import { world, system, Player, Vector3, ItemStack, CameraFadeOptions, CameraSetPosOptions, EasingType } from '@minecraft/server';
 import { ActionFormData, MessageFormData, ModalFormData } from '@minecraft/server-ui';
 
 const shovelID = "lca:claim_shovel"
@@ -15,6 +15,7 @@ const claimIcons = {
 
 const dbPlayerDefault = {
     "in-claim": false,
+    "viewing-claim": false,
     "first-point": {
         "x": 0,
         "y": 0,
@@ -30,6 +31,7 @@ const dbPlayerDefault = {
 }
 
 const dbPermissionsDefault = {
+    "enter-claim": true,
     "break-blocks": false,
     "use-items-on-blocks": false,
     "use-tnt": false,
@@ -318,6 +320,7 @@ class Ui {
             .button("ui.manage.button:config", "textures/ui/debug_glyph_color.png")
             .button("ui.manage.button:public_permissions", "textures/ui/icon_multiplayer.png")
             .button("ui.manage.button:player_permissions", "textures/ui/icon_steve.png")
+            .button("ui.manage.button:view", "textures/ui/magnifyingGlass.png")
             .button("ui.manage.button:sell", "textures/ui/icon_trash.png")
             .button("ui.global.button:back")
 
@@ -332,13 +335,135 @@ class Ui {
                 this.publicPermissions(player, claim);
             }
             else if (response.selection == 3) {
-                this.sellClaim(player, claim);
+                this.viewClaim(player, claim);
             }
             else if (response.selection == 4) {
+                this.sellClaim(player, claim);
+            }
+            else if (response.selection == 5) {
                 // return to previous menu
                 this.manage(player);
             }
         });
+    }
+
+    /*
+    Uses the camera command to circle around the specified claim.
+    */
+    static viewClaim(player: Player, claim: string) {
+
+        // set flag
+        database[player.name]["viewing-claim"] = true;
+
+        // hide hud
+        player.runCommand("hud @s hide");
+
+        // fade parameters
+        var transition: CameraFadeOptions = {
+            "fadeColor": {
+                "red": 1,
+                "green": 1,
+                "blue": 1
+            },
+            "fadeTime": {
+                "fadeInTime": 0.5,
+                "fadeOutTime": 1,
+                "holdTime": 5
+            }
+        }
+
+        // start transition
+        player.camera.fade(transition);
+
+        // user defined start and end points of the claim
+        var start = database[player.name]["claims"][claim]["start"];
+        var end = database[player.name]["claims"][claim]["end"];
+
+        // load the claim
+        player.runCommand(`tickingarea add ${start["x"]} ${start["y"]} ${start["z"]} ${end["x"]} ${end["y"]} ${end["z"]} claimView`);
+
+        // all 4 points of the claim
+        var points = [
+            [start["x"], start["z"]],
+            [start["x"], end["z"]],
+            [end["x"], end["z"]],
+            [end["x"], start["z"]]
+        ];
+
+        // get the center most block of the claim to look at
+        var centerBlock: Vector3 = {
+            "x": (start["x"] + end["x"]) / 2,
+            "y": (start["y"] + end["y"]) / 2,
+            "z": (start["z"] + end["z"]) / 2
+        }
+
+        // find a reasonable height to position the camera at
+        var height = Math.sqrt((points[3][0] ** 2) + (points[3][1]) ** 2) / 2
+
+        // camera parameters
+        var cornerView: CameraSetPosOptions = {
+            "facingLocation": centerBlock,
+            "location": {
+                "x": points[3][0],
+                "y": centerBlock["y"] + height,
+                "z": points[3][1]
+            }
+        }
+
+        // called recursively to cycle through all points
+        function nextCorner(index) {
+
+            // the very first point should be set without a delay
+            if (index == 0) {
+                var delay = 0;
+            }
+            else {
+                var delay = 100;
+            }
+
+            system.runTimeout(() => {
+                cornerView.easeOptions = {
+                    "easeTime": 5,
+                    "easeType": EasingType.InOutSine
+                };
+                cornerView.location.x = points[index][0];
+                cornerView.location.z = points[index][1];
+                player.camera.setCamera("minecraft:free", cornerView);
+
+                // next corner
+                if (index < 3) {
+                    nextCorner(index + 1);
+                }
+                // animation is over, return to first person
+                else {
+                    system.runTimeout(() => {
+                        transition.fadeTime.holdTime = 1;
+                        player.camera.fade(transition);
+                        system.runTimeout(() => {
+                            player.camera.clear();
+
+                            // unload the claim
+                            player.runCommand("tickingarea remove claimView");
+
+                            // set flag back to false
+                            database[player.name]["viewing-claim"] = false;
+
+                            // show hud
+                            player.runCommand("hud @s reset");
+
+                        }, 30);
+                    }, 100);
+                }
+            }, delay);
+        };
+
+        // goto the first corner and start the animation
+        system.runTimeout(() => {
+            player.camera.setCamera("minecraft:free", cornerView);
+            system.runTimeout(() => {
+                nextCorner(0);
+            }, 100)
+        }, 20);
     }
 
     static sellClaim(player: Player, claim: string) {
@@ -442,6 +567,9 @@ world.afterEvents.playerJoin.subscribe((data) => {
 world.afterEvents.playerSpawn.subscribe((data) => {
     // make sure player has a claim shovel
     data.player.runCommandAsync(`execute if entity @s[hasitem = { item=${shovelID}, quantity = 0}] run give @s ${shovelID} 1 0 { "keep_on_death": { }, "item_lock": { "mode": "lock_in_inventory" } } `);
+
+    // set flag to false since all camera positions will be reset upon rejoining
+    database[data.player.name]["viewing-claim"] = false;
 });
 
 // open menu when claim shovel is used
@@ -449,6 +577,13 @@ world.afterEvents.itemUse.subscribe((data) => {
     if (data.itemStack.typeId == shovelID) {
         Ui.main(data.source);
     };
+});
+
+// disallow players from using items when viewing a claim
+world.beforeEvents.itemUse.subscribe((data) => {
+    if (database[data.source.name]["viewing-claim"]) {
+        data.cancel = true;
+    }
 });
 
 world.beforeEvents.itemUseOn.subscribe((data) => {

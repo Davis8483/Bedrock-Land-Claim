@@ -38,6 +38,7 @@ ui.manage.body:claim_end=Claim End
 ui.manage.button:config=Config
 ui.manage.button:public_permissions=Public Permissions
 ui.manage.button:player_permissions=Player Permissions
+ui.manage.button:view=View Claim
 ui.manage.button:sell=§cSell Claim§r
 ui.manage.label:private=§c[Private]§r
 ui.manage.label:public=§a[Public]§r
