@@ -30,6 +30,13 @@ const dbPlayerDefault = {
     "claims": {}
 }
 
+const dbPlayerPermissionsDefault = {
+    "enter-claim": true,
+    "break-blocks": false,
+    "use-items-on-blocks": false,
+    "hurt-entities": false
+}
+
 const dbPermissionsDefault = {
     "enter-claim": true,
     "break-blocks": false,
@@ -73,7 +80,7 @@ for (var player of Object.keys(database)) {
         // verify data in player: {}
         for (var permission_player of Object.keys(database[player]["claims"][claim]["permissions"]["players"])) {
             database[player]["claims"][claim]["permissions"]["players"][permission_player] = {
-                ...dbPermissionsDefault,
+                ...dbPlayerPermissionsDefault,
                 ...database[player]["claims"][claim]["permissions"]["players"][permission_player]
             }
         }
@@ -791,11 +798,14 @@ world.beforeEvents.explosion.subscribe((data) => {
         // find player closest to the explosion, we'll assume this is the player that placed the tnt
         var closestPlayer: Player = getClosestPlayer(data.source.location);
 
+        // flag to send notification
+        var sendDisallowedNotification = false;
+
         // check if tnt blast effects a claim
         runInClaims((playerName, claimName, claim) => {
 
             // if entity is a mob or player doesn't have permissions
-            if ((data.source.typeId != "minecraft:tnt") || !((closestPlayer.name == playerName) || hasPermission(claim, "use-tnt", closestPlayer))) {
+            if ((data.source.typeId != "minecraft:tnt") || hasPermission(claim, "use-tnt")) {
                 // remove all impacted blocks that lie within a claim
                 for (var i = 0; i < impactedBlocks.length; i++) {
                     var block = impactedBlocks[i]
@@ -803,6 +813,9 @@ world.beforeEvents.explosion.subscribe((data) => {
                     if (doOverlap(claim["start"], claim["end"], block, block)) {
                         // remove the block
                         impactedBlocks.splice(impactedBlocks.indexOf(block), 1);
+
+                        // set notification flag
+                        sendDisallowedNotification = true;
 
                         // account for deletion
                         i--;
@@ -815,7 +828,7 @@ world.beforeEvents.explosion.subscribe((data) => {
         data.setImpactedBlocks(impactedBlocks);
 
         // if tnt effected a claim notify player
-        if (data.source.typeId == "minecraft:tnt") {
+        if ((data.source.typeId == "minecraft:tnt") && sendDisallowedNotification) {
             system.run(() => {
                 sendNotification(closestPlayer, "chat.claim.permission:use_tnt");
                 closestPlayer.playSound("note.didgeridoo");
