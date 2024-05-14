@@ -372,9 +372,6 @@ class Ui {
             }
         }
 
-        // start transition
-        player.camera.fade(transition);
-
         // user defined start and end points of the claim
         var start = database[player.name]["claims"][claim]["start"];
         var end = database[player.name]["claims"][claim]["end"];
@@ -420,12 +417,12 @@ class Ui {
                 var delay = 0;
             }
             else {
-                var delay = 100;
+                var delay = 60;
             }
 
             system.runTimeout(() => {
                 cornerView.easeOptions = {
-                    "easeTime": 5,
+                    "easeTime": 3,
                     "easeType": EasingType.InOutSine
                 };
                 cornerView.location.x = points[index][0];
@@ -454,10 +451,14 @@ class Ui {
                             player.runCommand("hud @s reset");
 
                         }, 30);
-                    }, 100);
+                    }, 60);
                 }
             }, delay);
         };
+
+        // start transition
+        player.camera.fade(transition);
+        player.playSound("beacon.activate");
 
         // goto the first corner and start the animation
         system.runTimeout(() => {
