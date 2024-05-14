@@ -40,8 +40,6 @@ ui.manage.button:public_permissions=Public Permissions
 ui.manage.button:player_permissions=Player Permissions
 ui.manage.button:view=View Claim
 ui.manage.button:sell=§cSell Claim§r
-ui.manage.label:private=§c[Private]§r
-ui.manage.label:public=§a[Public]§r
 
 ui.manage.sell:body=Are you sure you want to sell this claim? This action cannot be undone.
 ui.manage.sell.button:confirm=§cSell Claim§r
@@ -59,7 +57,6 @@ ui.claim.resize.button:resize=§dResize Claim§r
 ui.claim.config.textbox:name=Name
 ui.claim.config:name_placeholder=Ex: Home
 ui.claim.config.dropdown:icon=Icon 
-ui.claim.config.toggle:private=Private
 ui.claim.config.toggle:border_particles=Border Particles
 
 ui.claim.icons:land=Land

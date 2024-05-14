@@ -30,6 +30,7 @@ const dbPlayerDefault = {
     "claims": {}
 }
 
+// player specific permissions
 const dbPlayerPermissionsDefault = {
     "enter-claim": true,
     "break-blocks": false,
@@ -37,6 +38,7 @@ const dbPlayerPermissionsDefault = {
     "hurt-entities": false
 }
 
+// global claim permissions
 const dbPermissionsDefault = {
     "enter-claim": true,
     "break-blocks": false,
@@ -52,8 +54,6 @@ const dbClaimDefault = {
     "icon": "",
 
     "particles": true,
-
-    "private": false,
 
     "permissions": {
         "public": { ...dbPermissionsDefault },
@@ -206,7 +206,6 @@ class Ui {
             .title("ui.claim.new:title")
             .textField("ui.claim.config.textbox:name", "ui.claim.config:name_placeholder")
             .dropdown("ui.claim.config.dropdown:icon", Object.keys(claimIcons))
-            .toggle("ui.claim.config.toggle:private", false)
             .toggle("ui.claim.config.toggle:border_particles", true)
 
         form.show(player).then((response) => {
@@ -215,8 +214,7 @@ class Ui {
 
                 var name = response.formValues[0].toString();
                 var iconPath = claimIcons[Object.keys(claimIcons)[response.formValues[1].toString()]];
-                var isPrivate = response.formValues[2];
-                var showBorderParticles = response.formValues[3];
+                var showBorderParticles = response.formValues[2];
 
                 if (name.length == 0) {
                     sendNotification(player, "chat.claim:name_required")
@@ -235,7 +233,6 @@ class Ui {
                     claims[name]["start"] = start;
                     claims[name]["end"] = end;
                     claims[name]["icon"] = iconPath;
-                    claims[name]["private"] = isPrivate;
                     claims[name]["particles"] = showBorderParticles;
 
                     sendNotification(player, "chat.claim:created")
@@ -277,17 +274,14 @@ class Ui {
             .title("ui.manage:title")
 
         for (var c of Object.keys(claims)) {
-            if (claims[c]["private"]) {
-                var label = "ui.manage.label:private"
-            }
-            else {
-                var label = "ui.manage.label:public"
-            }
+
+            var width = Math.abs(claims[c]["start"]["x"] - claims[c]["end"]["x"]);
+            var length = Math.abs(claims[c]["start"]["z"] - claims[c]["end"]["z"]);
+
             form.button(
                 {
                     "rawtext": [
-                        { "text": `${c}\n` },
-                        { "translate": label }
+                        { "text": `${c}§r\n§c${width}§8x§9${length} ` }
                     ]
                 }, claims[c]["icon"]);
         }
@@ -516,7 +510,6 @@ class Ui {
             })
             .textField("ui.claim.config.textbox:name", "ui.claim.config:name_placeholder", claim)
             .dropdown("ui.claim.config.dropdown:icon", Object.keys(claimIcons), Object.values(claimIcons).indexOf(claims[claim]["icon"]))
-            .toggle("ui.claim.config.toggle:private", claims[claim]["private"])
             .toggle("ui.claim.config.toggle:border_particles", claims[claim]["particles"])
 
         form.show(player).then((response) => {
@@ -525,8 +518,7 @@ class Ui {
 
                 var name = response.formValues[0].toString();
                 var iconPath = claimIcons[Object.keys(claimIcons)[response.formValues[1].toString()]];
-                var isPrivate = response.formValues[2];
-                var showBorderParticles = response.formValues[3];
+                var showBorderParticles = response.formValues[2];
 
                 if (name.length == 0) {
                     sendNotification(player, "chat.claim:name_required")
@@ -542,7 +534,6 @@ class Ui {
                         delete claims[claim];
                     }
 
-                    claims[name]["private"] = isPrivate;
                     claims[name]["icon"] = iconPath;
                     claims[name]["particles"] = showBorderParticles;
 

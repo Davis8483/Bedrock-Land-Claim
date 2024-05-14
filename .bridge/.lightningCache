@@ -5,7 +5,7 @@ projects/Bedrock-Land-Claim/BP/manifest.json|1715605250
 projects/Bedrock-Land-Claim/BP/pack_icon.png|1713207868
 projects/Bedrock-Land-Claim/RP/pack_icon.png|1713207868
 #gameTest
-projects/Bedrock-Land-Claim/BP/scripts/main.ts|1715691441
+projects/Bedrock-Land-Claim/BP/scripts/main.ts|1715705116
 #item
 projects/Bedrock-Land-Claim/BP/items/claim_shovel.json|1713187821|{"identifier":["lca:claim_shovel"],"itemTexture":["lca_claim_shovel"],"tag":[]}
 #langDef
@@ -13,7 +13,7 @@ projects/Bedrock-Land-Claim/RP/texts/languages.json|1712924744
 #clientManifest
 projects/Bedrock-Land-Claim/RP/manifest.json|1715605243|{"uuid":["2b221639-32d8-4f99-b64b-461337fdec3d"]}
 #clientLang
-projects/Bedrock-Land-Claim/RP/texts/en_US.lang|1715603924|{"actionText":[]}
+projects/Bedrock-Land-Claim/RP/texts/en_US.lang|1715705125|{"actionText":[]}
 #texture
 projects/Bedrock-Land-Claim/RP/textures/particles/first_point.png|1712924744
 projects/Bedrock-Land-Claim/RP/textures/items/claim_shovel.png|1712924744
