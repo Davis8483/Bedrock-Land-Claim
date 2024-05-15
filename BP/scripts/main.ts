@@ -353,121 +353,130 @@ class Ui {
     */
     static viewClaim(player: Player, claim: string) {
 
-        // set flag
-        database[player.name]["viewing-claim"] = true;
+        // only run if player is in overworld
+        if (player.dimension == world.getDimension("overworld")) {
 
-        // hide hud
-        player.runCommand("hud @s hide");
+            // set flag
+            database[player.name]["viewing-claim"] = true;
 
-        // fade parameters
-        var transition: CameraFadeOptions = {
-            "fadeColor": {
-                "red": 1,
-                "green": 1,
-                "blue": 1
-            },
-            "fadeTime": {
-                "fadeInTime": 0.5,
-                "fadeOutTime": 1,
-                "holdTime": 5
-            }
-        }
+            // hide hud
+            player.runCommand("hud @s hide");
 
-        // user defined start and end points of the claim
-        var start = database[player.name]["claims"][claim]["start"];
-        var end = database[player.name]["claims"][claim]["end"];
-
-        // load the claim
-        player.runCommand(`tickingarea add ${start["x"]} ${start["y"]} ${start["z"]} ${end["x"]} ${end["y"]} ${end["z"]} claimView`);
-
-        // all 4 points of the claim
-        var points = [
-            [start["x"], start["z"]],
-            [start["x"], end["z"]],
-            [end["x"], end["z"]],
-            [end["x"], start["z"]]
-        ];
-
-        // get the center most block of the claim to look at
-        var centerBlock: Vector3 = {
-            "x": (start["x"] + end["x"]) / 2,
-            "y": (start["y"] + end["y"]) / 2,
-            "z": (start["z"] + end["z"]) / 2
-        }
-
-        // find a reasonable height to position the camera at
-        var width = Math.abs(start["x"] - end["x"]);
-        var length = Math.abs(start["z"] - end["z"]);
-        var height = Math.sqrt((width ** 2) + (length ** 2)) / 2;
-
-        // camera parameters
-        var cornerView: CameraSetPosOptions = {
-            "facingLocation": centerBlock,
-            "location": {
-                "x": points[3][0],
-                "y": centerBlock["y"] + height,
-                "z": points[3][1]
-            }
-        }
-
-        // called recursively to cycle through all points
-        function nextCorner(index) {
-
-            // the very first point should be set without a delay
-            if (index == 0) {
-                var delay = 0;
-            }
-            else {
-                var delay = 60;
-            }
-
-            system.runTimeout(() => {
-                cornerView.easeOptions = {
-                    "easeTime": 3,
-                    "easeType": EasingType.InOutSine
-                };
-                cornerView.location.x = points[index][0];
-                cornerView.location.z = points[index][1];
-                player.camera.setCamera("minecraft:free", cornerView);
-
-                // next corner
-                if (index < 3) {
-                    nextCorner(index + 1);
+            // fade parameters
+            var transition: CameraFadeOptions = {
+                "fadeColor": {
+                    "red": 1,
+                    "green": 1,
+                    "blue": 1
+                },
+                "fadeTime": {
+                    "fadeInTime": 0.5,
+                    "fadeOutTime": 1,
+                    "holdTime": 5
                 }
-                // animation is over, return to first person
+            }
+
+            // user defined start and end points of the claim
+            var start = database[player.name]["claims"][claim]["start"];
+            var end = database[player.name]["claims"][claim]["end"];
+
+            // load the claim
+            player.runCommand(`tickingarea add ${start["x"]} ${start["y"]} ${start["z"]} ${end["x"]} ${end["y"]} ${end["z"]} claimView`);
+
+            // all 4 points of the claim
+            var points = [
+                [start["x"], start["z"]],
+                [start["x"], end["z"]],
+                [end["x"], end["z"]],
+                [end["x"], start["z"]]
+            ];
+
+            // get the center most block of the claim to look at
+            var centerBlock: Vector3 = {
+                "x": (start["x"] + end["x"]) / 2,
+                "y": (start["y"] + end["y"]) / 2,
+                "z": (start["z"] + end["z"]) / 2
+            }
+
+            // find a reasonable height to position the camera at
+            var width = Math.abs(start["x"] - end["x"]);
+            var length = Math.abs(start["z"] - end["z"]);
+            var height = Math.sqrt((width ** 2) + (length ** 2)) / 2;
+
+            // camera parameters
+            var cornerView: CameraSetPosOptions = {
+                "facingLocation": centerBlock,
+                "location": {
+                    "x": points[3][0],
+                    "y": centerBlock["y"] + height,
+                    "z": points[3][1]
+                }
+            }
+
+            // called recursively to cycle through all points
+            function nextCorner(index) {
+
+                // the very first point should be set without a delay
+                if (index == 0) {
+                    var delay = 0;
+                }
                 else {
-                    system.runTimeout(() => {
-                        transition.fadeTime.holdTime = 1;
-                        player.camera.fade(transition);
-                        system.runTimeout(() => {
-                            player.camera.clear();
-
-                            // unload the claim
-                            player.runCommand("tickingarea remove claimView");
-
-                            // set flag back to false
-                            database[player.name]["viewing-claim"] = false;
-
-                            // show hud
-                            player.runCommand("hud @s reset");
-
-                        }, 30);
-                    }, 60);
+                    var delay = 60;
                 }
-            }, delay);
-        };
 
-        // start transition
-        player.camera.fade(transition);
-        player.playSound("beacon.activate");
+                system.runTimeout(() => {
+                    cornerView.easeOptions = {
+                        "easeTime": 3,
+                        "easeType": EasingType.InOutSine
+                    };
+                    cornerView.location.x = points[index][0];
+                    cornerView.location.z = points[index][1];
+                    player.camera.setCamera("minecraft:free", cornerView);
 
-        // goto the first corner and start the animation
-        system.runTimeout(() => {
-            player.camera.setCamera("minecraft:free", cornerView);
+                    // next corner
+                    if (index < 3) {
+                        nextCorner(index + 1);
+                    }
+                    // animation is over, return to first person
+                    else {
+                        system.runTimeout(() => {
+                            transition.fadeTime.holdTime = 1;
+                            player.camera.fade(transition);
+                            system.runTimeout(() => {
+                                player.camera.clear();
+
+                                // unload the claim
+                                player.runCommand("tickingarea remove claimView");
+
+                                // set flag back to false
+                                database[player.name]["viewing-claim"] = false;
+
+                                // show hud
+                                player.runCommand("hud @s reset");
+
+                            }, 30);
+                        }, 60);
+                    }
+                }, delay);
+            };
+
+            // start transition
+            player.camera.fade(transition);
+            player.playSound("beacon.activate");
+
+            // goto the first corner and start the animation
             system.runTimeout(() => {
-                nextCorner(0);
-            }, 100)
-        }, 20);
+                player.camera.setCamera("minecraft:free", cornerView);
+                system.runTimeout(() => {
+                    nextCorner(0);
+                }, 100)
+            }, 20);
+        }
+        // player is not in the right dimension
+        else {
+            player.playSound("note.didgeridoo");
+            sendNotification(player, "chat.claim:view");
+        }
     }
 
     static sellClaim(player: Player, claim: string) {
