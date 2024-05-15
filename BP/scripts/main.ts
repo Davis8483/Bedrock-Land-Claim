@@ -922,42 +922,53 @@ world.beforeEvents.itemUse.subscribe((data) => {
 // player management in claims, runs every 1/20th of a second
 system.runInterval(() => {
     for (var p of world.getAllPlayers()) {
-        // capture the state of player attribute "in-claim" before it is updated
-        var inClaimOld: boolean = database[p.name]["in-claim"];
 
-        // set flag to false before for loop updates it
-        database[p.name]["in-claim"] = false;
+        // only run if player is in overworld
+        if (p.dimension == world.getDimension("overworld")) {
 
-        runInClaims((playerName, claimName, claim) => {
+            // capture the state of player attribute "in-claim" before it is updated
+            var inClaimOld: boolean = database[p.name]["in-claim"];
 
-            // if player is in the claim
-            if (doOverlap(claim["start"], claim["end"], p.location, p.location)) {
+            // set flag to false before for loop updates it
+            database[p.name]["in-claim"] = false;
 
-                database[p.name]["in-claim"] = true
+            runInClaims((playerName, claimName, claim) => {
 
-                // make sure player can't hurt entities if they don't have permission
-                if ((playerName != p.name) && !hasPermission(claim, "hurt-entities", p)) {
-                    p.addEffect("weakness", 40, { "amplifier": 255, "showParticles": false });
+                // if player is in the claim
+                if (doOverlap(claim["start"], claim["end"], p.location, p.location)) {
+
+                    database[p.name]["in-claim"] = true
+
+                    // make sure player can't hurt entities if they don't have permission
+                    if ((playerName != p.name) && !hasPermission(claim, "hurt-entities", p)) {
+                        p.addEffect("weakness", 40, { "amplifier": 255, "showParticles": false });
+                    }
+
+                    // show claim name and owner onscreen
+                    p.onScreenDisplay.setActionBar(
+                        {
+                            "rawtext": [
+                                { "translate": "actionbar.claim:name_color" },
+                                { "text": `${claimName}§r - ${playerName}` },
+                            ]
+                        });
                 }
+            });
 
-                // show claim name and owner onscreen
-                p.onScreenDisplay.setActionBar(
-                    {
-                        "rawtext": [
-                            { "translate": "actionbar.claim:name_color" },
-                            { "text": `${claimName}§r - ${playerName}` },
-                        ]
-                    });
+
+
+            // player has entered claim
+            if (!inClaimOld && database[p.name]["in-claim"]) {
+                p.playSound("random.door_open")
             }
-        });
-
-        // player has entered claim
-        if (!inClaimOld && database[p.name]["in-claim"]) {
-            p.playSound("random.door_open")
+            // player has exited the claim
+            else if (inClaimOld && !database[p.name]["in-claim"]) {
+                p.playSound("random.door_close")
+            }
         }
-        // player has exited the claim
-        else if (inClaimOld && !database[p.name]["in-claim"]) {
-            p.playSound("random.door_close")
+        // player is not in overworld
+        else {
+            database[p.name]["in-claim"] = false;
         }
     }
 }, 1);
