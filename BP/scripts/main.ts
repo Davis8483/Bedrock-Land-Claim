@@ -159,7 +159,9 @@ function getClosestPlayer(blockLocation: Vector3): Player {
 
     // find player closest to the specified block
     for (var p of world.getAllPlayers()) {
-        if ((closestPlayer == undefined) || (Math.cbrt(Math.pow(p.location.x, 3) + Math.pow(p.location.y, 3) + Math.pow(p.location.z, 3)) < (Math.cbrt(Math.pow(closestPlayer.location.x, 3) + Math.pow(closestPlayer.location.y, 3) + Math.pow(closestPlayer.location.z, 3))))) {
+        if ((p.dimension == world.getDimension("overworld"))
+            && ((closestPlayer == undefined)
+                || (Math.cbrt(Math.pow(p.location.x, 3) + Math.pow(p.location.y, 3) + Math.pow(p.location.z, 3)) < (Math.cbrt(Math.pow(closestPlayer.location.x, 3) + Math.pow(closestPlayer.location.y, 3) + Math.pow(closestPlayer.location.z, 3)))))) {
             closestPlayer = p;
         }
     }

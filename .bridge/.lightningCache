@@ -5,7 +5,7 @@ projects/LCA V4/BP/manifest.json|1715562250
 projects/LCA V4/BP/pack_icon.png|1713209860
 projects/LCA V4/RP/pack_icon.png|1713209860
 #gameTest
-projects/LCA V4/BP/scripts/main.ts|1715737578
+projects/LCA V4/BP/scripts/main.ts|1715741234
 #item
 projects/LCA V4/BP/items/claim_shovel.json|1713152597|{"identifier":["lca:claim_shovel"],"itemTexture":["lca_claim_shovel"],"tag":[]}
 #langDef
