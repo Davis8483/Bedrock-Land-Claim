@@ -932,6 +932,17 @@ world.beforeEvents.itemUse.subscribe((data) => {
 
 // player management in claims, runs every 1/20th of a second
 system.runInterval(() => {
+
+    // make sure fire charges can't fly into claims
+    runInClaims((playerName, claimName, claim) => {
+        var x = claim["start"]["x"];
+        var z = claim["start"]["z"];
+        var dx = claim["end"]["x"] - claim["start"]["x"];
+        var dz = claim["end"]["z"] - claim["start"]["z"];
+
+        world.getDimension("overworld").runCommand(`kill @e[type=small_fireball, x=${x}, y=-1000, z=${z}, dx=${dx}, dy=1000, dz=${dz}]`)
+    });
+
     for (var p of world.getAllPlayers()) {
 
         // only run if player is in overworld
