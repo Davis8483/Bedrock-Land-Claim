@@ -361,8 +361,12 @@ class Ui {
             // set flag
             database[player.name]["viewing-claim"] = true;
 
+            // disable player movement
+            player.runCommandAsync("inputpermission set @s camera disabled");
+            player.runCommandAsync("inputpermission set @s movement disabled");
+
             // hide hud
-            player.runCommand("hud @s hide");
+            player.runCommandAsync("hud @s hide");
 
             // fade parameters
             var transition: CameraFadeOptions = {
@@ -383,7 +387,7 @@ class Ui {
             var end = database[player.name]["claims"][claim]["end"];
 
             // load the claim
-            player.runCommand(`tickingarea add ${start["x"]} ${start["y"]} ${start["z"]} ${end["x"]} ${end["y"]} ${end["z"]} claimView`);
+            player.runCommandAsync(`tickingarea add ${start["x"]} ${start["y"]} ${start["z"]} ${end["x"]} ${end["y"]} ${end["z"]} claimView`);
 
             // all 4 points of the claim
             var points = [
@@ -448,13 +452,17 @@ class Ui {
                                 player.camera.clear();
 
                                 // unload the claim
-                                player.runCommand("tickingarea remove claimView");
+                                player.runCommandAsync("tickingarea remove claimView");
 
                                 // set flag back to false
                                 database[player.name]["viewing-claim"] = false;
 
+                                // enable player movement again
+                                player.runCommandAsync("inputpermission set @s camera enabled");
+                                player.runCommandAsync("inputpermission set @s movement enabled");
+
                                 // show hud
-                                player.runCommand("hud @s reset");
+                                player.runCommandAsync("hud @s reset");
 
                             }, 30);
                         }, 60);
@@ -966,14 +974,16 @@ system.runInterval(() => {
                         p.addEffect("weakness", 40, { "amplifier": 255, "showParticles": false });
                     }
 
-                    // show claim name and owner onscreen
-                    p.onScreenDisplay.setActionBar(
-                        {
-                            "rawtext": [
-                                { "translate": "actionbar.claim:name_color" },
-                                { "text": `${claimName}§r - ${playerName}` },
-                            ]
-                        });
+                    if (!database[p.name]["viewing-claim"]) {
+                        // show claim name and owner onscreen
+                        p.onScreenDisplay.setActionBar(
+                            {
+                                "rawtext": [
+                                    { "translate": "actionbar.claim:name_color" },
+                                    { "text": `${claimName}§r - ${playerName}` },
+                                ]
+                            });
+                    }
                 }
             });
 
