@@ -117,17 +117,20 @@ function hasPermission(claim: {}, permission: string, player: Player = undefined
     var playerPermissions = claim["permissions"]["players"];
 
     // check if player is in specific permissions list
-    if ((player != undefined) && player.name in Object.keys(playerPermissions)) {
-        if (permission in Object.keys(playerPermissions[player.name])) {
+    if ((player != undefined) && Object.keys(playerPermissions).includes(player.name)) {
+        if (Object.keys(playerPermissions[player.name]).includes(permission)) {
+
             return playerPermissions[player.name][permission]
         }
     }
     // default to claims global permissions list
     else {
-        if (permission in Object.keys(claim["permissions"]["public"])) {
+        if (Object.keys(claim["permissions"]["public"]).includes(permission)) {
+
             return (claim["permissions"]["public"][permission]);
         }
     }
+
     // permission not found
     return (false);
 }
@@ -141,7 +144,7 @@ function runInClaims(callback: (playerName: string, claimName: string, claimData
         var claims = database[playerName]["claims"]
 
         for (var claimName of Object.keys(claims)) {
-            // world.sendMessage(claimName)
+
             callback(playerName, claimName, claims[claimName]);
         }
     }
@@ -180,29 +183,29 @@ class Ui {
         "ui.claim.icons:flowers": "textures/ui/icon_spring.png"
     };
 
-    static main(player: Player) {
-        var claims: {} = database[player.name]["claims"];
+    static main(owner: Player) {
+        var claims: {} = database[owner.name]["claims"];
 
         const form = new ActionFormData()
             .title("ui.main:title")
             .button("ui.main.button:manage", "textures/ui/icon_setting.png")
             .button("ui.main.button:close")
 
-        form.show(player).then((response) => {
+        form.show(owner).then((response) => {
             if (response.selection == 0) {
                 if (Object.keys(claims).length == 0) {
-                    sendNotification(player, "chat.claim:no_claims");
-                    player.playSound("note.didgeridoo");
+                    sendNotification(owner, "chat.claim:no_claims");
+                    owner.playSound("note.didgeridoo");
                 }
                 else {
-                    this.manage(player);
+                    this.managePage(owner);
                 }
             }
         });
     }
 
-    static newClaim(player: Player, start: Vector3, end: Vector3) {
-        var claims: {} = database[player.name]["claims"];
+    static newClaim(owner: Player, start: Vector3, end: Vector3) {
+        var claims: {} = database[owner.name]["claims"];
 
         const form = new ModalFormData()
             .title("ui.claim.new:title")
@@ -210,7 +213,7 @@ class Ui {
             .dropdown("ui.claim.config.dropdown:icon", Object.keys(claimIcons))
             .toggle("ui.claim.config.toggle:border_particles", true)
 
-        form.show(player).then((response) => {
+        form.show(owner).then((response) => {
 
             if (!response.canceled) {
 
@@ -219,12 +222,12 @@ class Ui {
                 var showBorderParticles = response.formValues[2];
 
                 if (name.length == 0) {
-                    sendNotification(player, "chat.claim:name_required")
-                    player.playSound("note.didgeridoo");
+                    sendNotification(owner, "chat.claim:name_required")
+                    owner.playSound("note.didgeridoo");
                 }
                 else if (name in claims) {
-                    sendNotification(player, "chat.claim:use_unique_name")
-                    player.playSound("note.didgeridoo");
+                    sendNotification(owner, "chat.claim:use_unique_name")
+                    owner.playSound("note.didgeridoo");
                 }
 
                 else {
@@ -237,8 +240,8 @@ class Ui {
                     claims[name]["icon"] = iconPath;
                     claims[name]["particles"] = showBorderParticles;
 
-                    sendNotification(player, "chat.claim:created")
-                    player.playSound("random.levelup");
+                    sendNotification(owner, "chat.claim:created")
+                    owner.playSound("random.levelup");
                 }
             }
             saveDb();
@@ -246,8 +249,8 @@ class Ui {
         });
     }
 
-    static resizeClaim(player: Player, claimName: string, start: Vector3, end: Vector3) {
-        var claims: {} = database[player.name]["claims"];
+    static resizeClaim(owner: Player, claimName: string, start: Vector3, end: Vector3) {
+        var claims: {} = database[owner.name]["claims"];
 
         const form = new MessageFormData()
             .title("ui.claim.resize:title")
@@ -255,22 +258,22 @@ class Ui {
             .button1("ui.claim.resize.button:cancel")
             .button2("ui.claim.resize.button:resize")
 
-        form.show(player).then((response) => {
+        form.show(owner).then((response) => {
             // if claim resized
             if (response.selection == 1) {
                 claims[claimName]["start"] = start;
                 claims[claimName]["end"] = end;
 
-                sendNotification(player, "chat.claim:resized")
-                player.playSound("random.levelup");
+                sendNotification(owner, "chat.claim:resized")
+                owner.playSound("random.levelup");
 
                 saveDb();
             }
         });
     }
 
-    static manage(player: Player) {
-        var claims = database[player.name]["claims"];
+    static managePage(owner: Player) {
+        var claims = database[owner.name]["claims"];
 
         const form = new ActionFormData()
             .title("ui.manage:title")
@@ -290,34 +293,34 @@ class Ui {
 
         form.button("ui.global.button:back")
 
-        form.show(player).then((response) => {
+        form.show(owner).then((response) => {
             if (response.selection == Object.keys(claims).length) {
                 // return to previous menu
-                this.main(player);
+                this.main(owner);
             }
             else {
-                this.manageClaim(player, Object.keys(claims)[response.selection].toString());
+                this.manageClaim(owner, Object.keys(claims)[response.selection].toString());
             }
         });
     }
 
-    static manageClaim(player: Player, claim: string) {
-        var claims = database[player.name]["claims"];
+    static manageClaim(owner: Player, claimName: string) {
+        var claims = database[owner.name]["claims"];
 
         const form = new ActionFormData()
             .title({
                 "rawtext": [
                     { "translate": "ui.manage:title" },
-                    { "text": `: ${claim}` }
+                    { "text": `: ${claimName}` }
                 ]
             })
             .body({
                 "rawtext": [
                     { "text": "\n" },
                     { "translate": "ui.manage.body:claim_start" },
-                    { "text": `:  §cX§r=${claims[claim]["start"]["x"]} §9Z§r=${claims[claim]["start"]["z"]}\n\n` },
+                    { "text": `:  §cX§r=${claims[claimName]["start"]["x"]} §9Z§r=${claims[claimName]["start"]["z"]}\n\n` },
                     { "translate": "ui.manage.body:claim_end" },
-                    { "text": `: §cX§r=${claims[claim]["end"]["x"]} §9Z§r=${claims[claim]["end"]["z"]}\n ` }
+                    { "text": `: §cX§r=${claims[claimName]["end"]["x"]} §9Z§r=${claims[claimName]["end"]["z"]}\n ` }
                 ]
             })
             .button("ui.manage.button:config", "textures/ui/debug_glyph_color.png")
@@ -327,53 +330,211 @@ class Ui {
             .button("ui.manage.button:sell", "textures/ui/icon_trash.png")
             .button("ui.global.button:back")
 
-        form.show(player).then((response) => {
+        form.show(owner).then((response) => {
             if (response.selection == 0) {
-                this.claimConfig(player, claim);
+                this.claimConfig(owner, claimName);
             }
             else if (response.selection == 1) {
-
+                this.managePermissions(owner, claimName);
             }
             else if (response.selection == 2) {
-                this.publicPermissions(player, claim);
+                this.playerPermissionsList(owner, claimName);
             }
             else if (response.selection == 3) {
-                this.viewClaim(player, claim);
+                this.viewClaim(owner, claimName);
             }
             else if (response.selection == 4) {
-                this.sellClaim(player, claim);
+                this.sellClaim(owner, claimName);
             }
             else if (response.selection == 5) {
                 // return to previous menu
-                this.manage(player);
+                this.managePage(owner);
             }
+        });
+    }
+
+    static playerPermissionsList(owner: Player, claimName: string) {
+        var claims = database[owner.name]["claims"];
+        var players = Object.keys(claims[claimName]["permissions"]["players"])
+
+        const form = new ActionFormData()
+            .title({
+                "rawtext": [
+                    { "translate": "ui.manage.permissions.player.selection:title" },
+                    { "text": `: ${claimName}` }
+                ]
+            })
+            .body("ui.manage.permissions.player.selection:body");
+
+        for (var pName of players) {
+            form.button(pName, "textures/ui/profile_glyph_color.png");
+        }
+
+        form.button("ui.manage.permissions.player.selection:add_player", "textures/ui/realms_slot_check.png");
+        form.button("ui.manage.permissions.player.selection:remove_player", "textures/ui/redX1.png");
+        form.button("ui.global.button:back");
+
+        form.show(owner).then((response) => {
+            if (response.selection == players.length) {
+                // open add player menu
+                this.playerPermissionsListModify(owner, claimName, true);
+            }
+            else if (response.selection == players.length + 1) {
+                // open remove player menu
+                this.playerPermissionsListModify(owner, claimName, false);
+            }
+            else if (response.selection == players.length + 2) {
+                // return to previous menu
+                this.manageClaim(owner, claimName);
+            }
+            else {
+                // open player permissions menu
+                this.managePermissions(owner, claimName, players[response.selection]);
+            }
+        });
+    }
+    /**
+     * creates a prompt to specify what player to add or remove from permissions list
+     */
+    static playerPermissionsListModify(owner: Player, claimName: string, add: boolean) {
+        var claims = database[owner.name]["claims"];
+
+        // if adding player, only show players not in list
+        if (add) {
+
+            // filter players from list
+            var players = Object.keys(database).filter(el => !Object.keys(claims[claimName]["permissions"]["players"]).includes(el));
+
+            // make sure to remove owner from list
+            players.splice(players.indexOf(owner.name), 1);
+        }
+        // if removing player, only show players in list
+        else {
+            var players = Object.keys(claims[claimName]["permissions"]["players"]);
+        }
+
+        const form = new ModalFormData()
+            .title(add ? {
+                "rawtext": [
+                    { "translate": "ui.manage.permissions.player.selection.modify.add:title" }
+                ]
+            } :
+                {
+                    "rawtext": [
+                        { "translate": "ui.manage.permissions.player.selection.modify.remove:title" }
+                    ]
+                }
+            )
+            .dropdown("ui.manage.permissions.player.selection.modify:player_dropdown", players);
+
+        form.show(owner).then((response) => {
+
+            if (add) {
+                // set up default permissions for specified player
+                claims[claimName]["permissions"]["players"][players[Number(response.formValues[0])]] = { ...claims[claimName]["permissions"]["public"] };
+            }
+            else {
+                // remove player from list
+                delete claims[claimName]["permissions"]["players"][players[Number(response.formValues[0])]];
+            }
+
+
+            saveDb();
+
+            // return to previous menu
+            this.playerPermissionsList(owner, claimName)
+
+        });
+
+    }
+
+    /**
+    *A page for editing a claims permissions.
+    *If the player parameter is not specified the form will edit the claims global permissions.
+    */
+    static managePermissions(owner: Player, claimName: string, playerName?: string) {
+        var permissions = playerName ?
+            database[owner.name]["claims"][claimName]["permissions"]["players"][playerName]
+            : database[owner.name]["claims"][claimName]["permissions"]["public"];
+
+        const form = new ModalFormData()
+            .title(playerName ? {
+                "rawtext": [
+                    { "text": `${playerName}` },
+                    { "translate": "ui.manage.permissions.player:title" },
+                    { "text": `: ${claimName}` }
+                ]
+            } :
+                {
+                    "rawtext": [
+                        { "translate": "ui.manage.permissions.public:title" },
+                        { "text": `: ${claimName}` }
+                    ]
+                }
+            )
+            .toggle("ui.manage.permissions:enter_claim", permissions["enter-claim"])
+            .toggle("ui.manage.permissions:break_blocks", permissions["break-blocks"])
+            .toggle("ui.manage.permissions:use_items_on_blocks", permissions["use-items-on-blocks"])
+            .toggle("ui.manage.permissions:hurt_entities", permissions["hurt-entities"]);
+
+        if (!playerName) {
+            form.toggle("ui.manage.permissions:use_tnt", permissions["use-tnt"])
+        }
+
+        form.show(owner).then((response) => {
+
+            if (!response.canceled) {
+
+                // save data
+                permissions["enter-claim"] = response.formValues[0];
+                permissions["break-blocks"] = response.formValues[1];
+                permissions["use-items-on-blocks"] = response.formValues[2];
+                permissions["hurt-entities"] = response.formValues[3];
+
+                if (!playerName) {
+                    permissions["use-tnt"] = response.formValues[4];
+                }
+
+                sendNotification(owner, "chat.claim:permissions_updated");
+                owner.playSound("random.levelup");
+
+                // if a players permissions have been updated notify them
+                for (var p of world.getAllPlayers()) {
+                    if (p.name == playerName) {
+                        p.runCommandAsync(`tellraw @s {"rawtext":[{"translate":"chat.prefix"}, {"text":" ${owner.name} "}, {"translate":"chat.claim:player_permissions_updated_notif"}, {"translate":"claim:name_color"}, {"text":" ${claimName}"}]}`);
+                        p.playSound("random.levelup");
+                    }
+                }
+            }
+            saveDb();
+
         });
     }
 
     /*
     Uses the camera command to circle around the specified claim.
     */
-    static viewClaim(player: Player, claim: string) {
+    static viewClaim(owner: Player, claimName: string) {
 
         // only run if player is in overworld
-        if (player.dimension == world.getDimension("overworld")) {
+        if (owner.dimension == world.getDimension("overworld")) {
 
             // set flag
-            database[player.name]["viewing-claim"] = true;
+            database[owner.name]["viewing-claim"] = true;
 
             // disable player movement
-            player.runCommandAsync("inputpermission set @s camera disabled");
-            player.runCommandAsync("inputpermission set @s movement disabled");
+            owner.runCommandAsync("inputpermission set @s camera disabled");
+            owner.runCommandAsync("inputpermission set @s movement disabled");
 
             // hide hud
-            player.runCommandAsync("hud @s hide");
+            owner.runCommandAsync("hud @s hide");
 
             // fade parameters
             var transition: CameraFadeOptions = {
                 "fadeColor": {
-                    "red": 1,
-                    "green": 1,
-                    "blue": 1
+                    "red": 0,
+                    "green": 0,
+                    "blue": 0
                 },
                 "fadeTime": {
                     "fadeInTime": 0.5,
@@ -383,11 +544,11 @@ class Ui {
             }
 
             // user defined start and end points of the claim
-            var start = database[player.name]["claims"][claim]["start"];
-            var end = database[player.name]["claims"][claim]["end"];
+            var start = database[owner.name]["claims"][claimName]["start"];
+            var end = database[owner.name]["claims"][claimName]["end"];
 
             // load the claim
-            player.runCommandAsync(`tickingarea add ${start["x"]} ${start["y"]} ${start["z"]} ${end["x"]} ${end["y"]} ${end["z"]} claimView`);
+            owner.runCommandAsync(`tickingarea add ${start["x"]} ${start["y"]} ${start["z"]} ${end["x"]} ${end["y"]} ${end["z"]} claimView`);
 
             // all 4 points of the claim
             var points = [
@@ -437,7 +598,7 @@ class Ui {
                     };
                     cornerView.location.x = points[index][0];
                     cornerView.location.z = points[index][1];
-                    player.camera.setCamera("minecraft:free", cornerView);
+                    owner.camera.setCamera("minecraft:free", cornerView);
 
                     // next corner
                     if (index < 3) {
@@ -447,22 +608,22 @@ class Ui {
                     else {
                         system.runTimeout(() => {
                             transition.fadeTime.holdTime = 1;
-                            player.camera.fade(transition);
+                            owner.camera.fade(transition);
                             system.runTimeout(() => {
-                                player.camera.clear();
+                                owner.camera.clear();
 
                                 // unload the claim
-                                player.runCommandAsync("tickingarea remove claimView");
+                                owner.runCommandAsync("tickingarea remove claimView");
 
                                 // set flag back to false
-                                database[player.name]["viewing-claim"] = false;
+                                database[owner.name]["viewing-claim"] = false;
 
                                 // enable player movement again
-                                player.runCommandAsync("inputpermission set @s camera enabled");
-                                player.runCommandAsync("inputpermission set @s movement enabled");
+                                owner.runCommandAsync("inputpermission set @s camera enabled");
+                                owner.runCommandAsync("inputpermission set @s movement enabled");
 
                                 // show hud
-                                player.runCommandAsync("hud @s reset");
+                                owner.runCommandAsync("hud @s reset");
 
                             }, 30);
                         }, 60);
@@ -471,12 +632,15 @@ class Ui {
             };
 
             // start transition
-            player.camera.fade(transition);
-            player.playSound("beacon.activate");
+            owner.camera.fade(transition);
+            owner.playSound("beacon.activate");
 
             // goto the first corner and start the animation
             system.runTimeout(() => {
-                player.camera.setCamera("minecraft:free", cornerView);
+                // show title to player
+                owner.onScreenDisplay.setTitle({ "translate": "ui.manage.view:loading" });
+
+                owner.camera.setCamera("minecraft:free", cornerView);
                 system.runTimeout(() => {
                     nextCorner(0);
                 }, 100)
@@ -484,54 +648,54 @@ class Ui {
         }
         // player is not in the right dimension
         else {
-            player.playSound("note.didgeridoo");
-            sendNotification(player, "chat.claim:view");
+            owner.playSound("note.didgeridoo");
+            sendNotification(owner, "chat.claim:view");
         }
     }
 
-    static sellClaim(player: Player, claim: string) {
-        var claims: {} = database[player.name]["claims"];
+    static sellClaim(owner: Player, claimName: string) {
+        var claims: {} = database[owner.name]["claims"];
 
         const form = new MessageFormData()
-            .title(claim)
+            .title(claimName)
             .body("ui.manage.sell:body")
             .button1("ui.manage.sell.button:cancel")
             .button2("ui.manage.sell.button:confirm")
 
-        form.show(player).then((response) => {
+        form.show(owner).then((response) => {
             // if deletion canceled
             if (response.selection == 0) {
 
                 // return to previous page on menu
-                this.manageClaim(player, claim);
+                this.manageClaim(owner, claimName);
             }
             else if (response.selection == 1) {
 
                 // delete claim
-                delete claims[claim];
-                sendNotification(player, "chat.claim:sold")
-                player.playSound("mob.creeper.say");
+                delete claims[claimName];
+                sendNotification(owner, "chat.claim:sold")
+                owner.playSound("mob.creeper.say");
 
                 saveDb();
             }
         });
     }
 
-    static claimConfig(player: Player, claim: string) {
-        var claims: {} = database[player.name]["claims"];
+    static claimConfig(owner: Player, claimName: string) {
+        var claims: {} = database[owner.name]["claims"];
 
         const form = new ModalFormData()
             .title({
                 "rawtext": [
                     { "translate": "ui.manage.config:title" },
-                    { "text": `: ${claim}` }
+                    { "text": `: ${claimName}` }
                 ]
             })
-            .textField("ui.claim.config.textbox:name", "ui.claim.config:name_placeholder", claim)
-            .dropdown("ui.claim.config.dropdown:icon", Object.keys(claimIcons), Object.values(claimIcons).indexOf(claims[claim]["icon"]))
-            .toggle("ui.claim.config.toggle:border_particles", claims[claim]["particles"])
+            .textField("ui.claim.config.textbox:name", "ui.claim.config:name_placeholder", claimName)
+            .dropdown("ui.claim.config.dropdown:icon", Object.keys(claimIcons), Object.values(claimIcons).indexOf(claims[claimName]["icon"]))
+            .toggle("ui.claim.config.toggle:border_particles", claims[claimName]["particles"])
 
-        form.show(player).then((response) => {
+        form.show(owner).then((response) => {
 
             if (!response.canceled) {
 
@@ -540,33 +704,29 @@ class Ui {
                 var showBorderParticles = response.formValues[2];
 
                 if (name.length == 0) {
-                    sendNotification(player, "chat.claim:name_required")
-                    player.playSound("note.didgeridoo");
+                    sendNotification(owner, "chat.claim:name_required")
+                    owner.playSound("note.didgeridoo");
                 }
                 else {
 
-                    if (claim != name) {
+                    if (claimName != name) {
                         // copy the claim over to the new name key
-                        claims[name] = Object.assign({}, claims[claim]);
+                        claims[name] = Object.assign({}, claims[claimName]);
 
                         // delete the old name key
-                        delete claims[claim];
+                        delete claims[claimName];
                     }
 
                     claims[name]["icon"] = iconPath;
                     claims[name]["particles"] = showBorderParticles;
 
-                    sendNotification(player, "chat.claim:updated")
-                    player.playSound("note.cow_bell");
+                    sendNotification(owner, "chat.claim:updated")
+                    owner.playSound("note.cow_bell");
                 }
             }
             saveDb();
 
         });
-    }
-
-    static publicPermissions(player: Player, claim: string) {
-
     }
 }
 
@@ -607,10 +767,20 @@ world.beforeEvents.itemUse.subscribe((data) => {
 });
 
 world.beforeEvents.itemUseOn.subscribe((data) => {
+    const faces = {
+        "North": data.block.north(1),
+        "East": data.block.east(1),
+        "South": data.block.south(1),
+        "West": data.block.west(1),
+        "Up": data.block.above(1),
+        "Down": data.block.below(1)
+    };
+    const placedBlock = faces[data.blockFace];
+
     if (data.block.dimension == world.getDimension("overworld")) {
         runInClaims((playerName, claimName, claim) => {
             // check if a block is broken by a player without permissions within the claim
-            if (doOverlap(claim["start"], claim["end"], data.block, data.block) && (playerName != data.source.name) && !hasPermission(claim, "use-items-on-blocks", data.source)) {
+            if ((doOverlap(claim["start"], claim["end"], data.block, data.block) || doOverlap(claim["start"], claim["end"], placedBlock, placedBlock)) && (playerName != data.source.name) && !hasPermission(claim, "use-items-on-blocks", data.source)) {
                 data.cancel = true;
 
                 system.run(() => {
@@ -942,14 +1112,16 @@ world.beforeEvents.itemUse.subscribe((data) => {
 system.runInterval(() => {
 
     // make sure fire charges can't fly into claims
-    runInClaims((playerName, claimName, claim) => {
-        var x = claim["start"]["x"];
-        var z = claim["start"]["z"];
-        var dx = claim["end"]["x"] - claim["start"]["x"];
-        var dz = claim["end"]["z"] - claim["start"]["z"];
-
-        world.getDimension("overworld").runCommand(`kill @e[type=small_fireball, x=${x}, y=-1000, z=${z}, dx=${dx}, dy=1000, dz=${dz}]`)
-    });
+    // also make sure withers can't fly into claim
+    for (var e of world.getDimension("overworld").getEntities()) {
+        runInClaims((playerName, claimName, claim) => {
+            if (doOverlap(claim["start"], claim["end"], e.location, e.location)) {
+                if (e.typeId == "minecraft:small_fireball" || e.typeId == "minecraft:wither") {
+                    e.remove();
+                }
+            }
+        });
+    }
 
     for (var p of world.getAllPlayers()) {
 
@@ -979,7 +1151,7 @@ system.runInterval(() => {
                         p.onScreenDisplay.setActionBar(
                             {
                                 "rawtext": [
-                                    { "translate": "actionbar.claim:name_color" },
+                                    { "translate": "claim:name_color" },
                                     { "text": `${claimName}§r - ${playerName}` },
                                 ]
                             });

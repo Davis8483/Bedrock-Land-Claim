@@ -3,7 +3,9 @@ item.spawn_egg.entity.lca:first_point.name=Spawn First Land Selection Point
 entity.lca:first_point.name=First Land Selection Point
 
 chat.prefix=[§5SLC§r]
+
 chat.shovel:dimension_warning=§cYou can only create claims in the overworld§r
+
 chat.claim:name_required=§cYou must provide a name!§r
 chat.claim:use_unique_name=§cYou can't use the name of an existing claim!§r
 chat.claim:created=§aClaim created!§r
@@ -12,7 +14,8 @@ chat.claim:sold=§cClaim sold.§r
 chat.claim:intersecting=§cA claim is already here!§r
 chat.claim:updated=§aClaim config has been saved!§r
 chat.claim:resized=§aClaim has been resized!§r
-
+chat.claim:permissions_updated=§aClaim permissions have been updated!§r
+chat.claim:player_permissions_updated_notif=§ahas updated your permissions for§r
 
 chat.point.new:selected=First point selected
 chat.point.resize:selected=Claim corner selected
@@ -48,6 +51,25 @@ ui.manage.sell.button:cancel=Cancel
 
 ui.manage.config:title=Claim Config
 
+ui.manage.permissions.public:title=Public Permissions
+ui.manage.permissions.player:title='s Permissions
+ui.manage.permissions:enter_claim=Enter Claim
+ui.manage.permissions:break_blocks=Break Blocks
+ui.manage.permissions:use_items_on_blocks=Use Items On Blocks | Ex: Placing
+ui.manage.permissions:hurt_entities=Hurt Entities
+ui.manage.permissions:use_tnt=Use Tnt
+
+ui.manage.permissions.player.selection:title=Player Permissions
+ui.manage.permissions.player.selection:body=The following overides public permissions...
+ui.manage.permissions.player.selection:add_player=§aAdd Player§r
+ui.manage.permissions.player.selection:remove_player=§cRemove Player§r
+
+ui.manage.permissions.player.selection.modify.add:title=Add Player
+ui.manage.permissions.player.selection.modify.remove:title=Remove Player
+ui.manage.permissions.player.selection.modify:player_dropdown=Player
+
+ui.manage.view:loading=Loading...
+
 ui.claim.new:title=New Claim
 
 ui.claim.resize:title=Resize Claim
@@ -66,4 +88,4 @@ ui.claim.icons:farmland=Farmland
 ui.claim.icons:weapons=Weapons
 ui.claim.icons:flowers=Flowers
 
-actionbar.claim:name_color=§5
+claim:name_color=§5
