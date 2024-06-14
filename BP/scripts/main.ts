@@ -787,6 +787,11 @@ world.beforeEvents.itemUseOn.subscribe((data) => {
     };
     const placedBlock = faces[data.blockFace];
 
+    // disable input when viewing a claim
+    if (database[data.source.name]["viewing-claim"]) {
+        data.cancel = true;
+    }
+
     if (data.block.dimension == world.getDimension("overworld")) {
         runInClaims((playerName, claimName, claim) => {
             // check if a block is broken by a player without permissions within the claim
@@ -963,7 +968,10 @@ world.beforeEvents.playerBreakBlock.subscribe((data) => {
 
     }
     else {
-        if (data.dimension == world.getDimension("overworld")) {
+        if (database[data.player.name]["viewing-claim"]) {
+            data.cancel = true;
+        }
+        else if (data.dimension == world.getDimension("overworld")) {
             runInClaims((playerName, claimName, claim) => {
                 // check if a block is broken by a player without permissions within the claim
                 if (doOverlap(claim["start"], claim["end"], data.block, data.block) && (playerName != data.player.name) && !hasPermission(claim, "break-blocks", data.player)) {
