@@ -16,6 +16,7 @@ chat.claim:updated=§aClaim config has been saved!§r
 chat.claim:resized=§aClaim has been resized!§r
 chat.claim:permissions_updated=§aClaim permissions have been updated!§r
 chat.claim:player_permissions_updated_notif=§ahas updated your permissions for§r
+chat.claim:player_permissions_reset_notif=§bhas reset your permissions for§r
 
 chat.point.new:selected=First point selected
 chat.point.resize:selected=Claim corner selected

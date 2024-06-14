@@ -429,13 +429,23 @@ class Ui {
 
         form.show(owner).then((response) => {
 
+            const playerName = players[Number(response.formValues[0])];
+
             if (add) {
                 // set up default permissions for specified player
-                claims[claimName]["permissions"]["players"][players[Number(response.formValues[0])]] = { ...claims[claimName]["permissions"]["public"] };
+                claims[claimName]["permissions"]["players"][playerName] = { ...claims[claimName]["permissions"]["public"] };
             }
             else {
                 // remove player from list
-                delete claims[claimName]["permissions"]["players"][players[Number(response.formValues[0])]];
+                delete claims[claimName]["permissions"]["players"][playerName];
+
+                // if a players permissions have been removed notify them
+                for (var p of world.getAllPlayers()) {
+                    if (p.name == playerName) {
+                        p.runCommandAsync(`tellraw @s {"rawtext":[{"translate":"chat.prefix"}, {"text":" ${owner.name} "}, {"translate":"chat.claim:player_permissions_reset_notif"}, {"translate":"claim:name_color"}, {"text":" ${claimName}"}]}`);
+                        p.playSound("random.levelup");
+                    }
+                }
             }
 
 
