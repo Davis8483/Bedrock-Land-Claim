@@ -1,2 +1,3 @@
-## Compatible Marketplace Addons
-- Gravestone | By Darkosto
+# Compatible Marketplace Addons
+## Gravestone, by Darkosto
+Gravestones can be broken by players even if they don't own the claim...
