@@ -1,13 +1,13 @@
 $formatVersion: 1
 #manifest
-projects/LCA V4/BP/manifest.json|1716697618185
+projects/LCA V4/BP/manifest.json|1718381644565
 #unknown
 projects/LCA V4/BP/pack_icon.png|1713209860
 projects/LCA V4/RP/pack_icon.png|1713209860
 #gameTest
-projects/LCA V4/BP/scripts/main.ts|1718339955
+projects/LCA V4/BP/scripts/main.ts|1718384622
 #item
-projects/LCA V4/BP/items/claim_shovel.json|1713152597|{"identifier":["lca:claim_shovel"],"itemTexture":["lca_claim_shovel"],"tag":[]}
+projects/LCA V4/BP/items/claim_shovel.json|1718384137921|{"identifier":["lca:claim_shovel"],"itemTexture":["lca_claim_shovel"],"tag":[]}
 #langDef
 projects/LCA V4/RP/texts/languages.json|1712779706
 #clientManifest

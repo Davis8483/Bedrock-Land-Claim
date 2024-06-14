@@ -816,143 +816,152 @@ world.beforeEvents.playerBreakBlock.subscribe((data) => {
 
         if (data.dimension == world.getDimension("overworld")) {
 
-            var firstPoint = database[data.player.name]["first-point"];
-            var isResize = false;
+            // only allow if cooldown is over
+            if (data.player.getItemCooldown("land_shovel_use") == 0) {
 
-            if (!data.player.isSneaking) {
-                firstPoint["resizing-claim"] = "";
-                firstPoint["x"] = data.block.x;
-                firstPoint["y"] = data.block.y;
-                firstPoint["z"] = data.block.z;
+                // start shovel cooldown of 1 sec
+                system.run(() => {
+                    data.player.startItemCooldown("land_shovel_use", 20);
+                });
 
-                runInClaims((playerName, claimName, claimData) => {
+                var firstPoint = database[data.player.name]["first-point"];
+                var isResize = false;
 
-                    // user defined start and end points of the claim
-                    var start = claimData["start"];
-                    var end = claimData["end"];
+                if (!data.player.isSneaking) {
+                    firstPoint["resizing-claim"] = "";
+                    firstPoint["x"] = data.block.x;
+                    firstPoint["y"] = data.block.y;
+                    firstPoint["z"] = data.block.z;
 
-                    // all 4 points of the claim
-                    var points = [
-                        [[start["x"], start["z"]], [start["x"], end["z"]]],
-                        [[end["x"], start["z"]], [end["x"], end["z"]]]
-                    ]
+                    runInClaims((playerName, claimName, claimData) => {
 
-                    var brokenPoint = [data.block.x, data.block.z];
+                        // user defined start and end points of the claim
+                        var start = claimData["start"];
+                        var end = claimData["end"];
 
-                    var aIndex = null;
-                    var bIndex = null;
+                        // all 4 points of the claim
+                        var points = [
+                            [[start["x"], start["z"]], [start["x"], end["z"]]],
+                            [[end["x"], start["z"]], [end["x"], end["z"]]]
+                        ]
 
-                    // find the index of the broken block
-                    for (var a = 0; a < points.length; a++) {
-                        for (var b = 0; b < points[a].length; b++) {
-                            if (JSON.stringify(points[a][b]) == JSON.stringify(brokenPoint)) {
-                                aIndex = a;
-                                bIndex = b;
+                        var brokenPoint = [data.block.x, data.block.z];
+
+                        var aIndex = null;
+                        var bIndex = null;
+
+                        // find the index of the broken block
+                        for (var a = 0; a < points.length; a++) {
+                            for (var b = 0; b < points[a].length; b++) {
+                                if (JSON.stringify(points[a][b]) == JSON.stringify(brokenPoint)) {
+                                    aIndex = a;
+                                    bIndex = b;
+                                }
                             }
                         }
-                    }
 
-                    // if broken block is on a claim corner
-                    if (aIndex != null) {
-                        isResize = true;
-                        if (playerName == data.player.name) {
-                            firstPoint["opposite-corner"] = { "x": points[aIndex ^ 1][bIndex ^ 1][0], "y": data.block.y, "z": points[aIndex ^ 1][bIndex ^ 1][1] }
-                            firstPoint["resizing-claim"] = claimName;
+                        // if broken block is on a claim corner
+                        if (aIndex != null) {
+                            isResize = true;
+                            if (playerName == data.player.name) {
+                                firstPoint["opposite-corner"] = { "x": points[aIndex ^ 1][bIndex ^ 1][0], "y": data.block.y, "z": points[aIndex ^ 1][bIndex ^ 1][1] }
+                                firstPoint["resizing-claim"] = claimName;
 
-                            data.player.sendMessage({
-                                "rawtext": [
-                                    { "translate": "chat.prefix" },
-                                    { "text": " " },
-                                    { "translate": "chat.point.resize:selected" },
-                                    { "text": `: [§c${data.block.x}§r, §a${data.block.y}§r, §9${data.block.z}§r]\n` },
-                                    { "translate": "chat.point.resize:hint" }
-                                ]
-                            });
+                                data.player.sendMessage({
+                                    "rawtext": [
+                                        { "translate": "chat.prefix" },
+                                        { "text": " " },
+                                        { "translate": "chat.point.resize:selected" },
+                                        { "text": `: [§c${data.block.x}§r, §a${data.block.y}§r, §9${data.block.z}§r]\n` },
+                                        { "translate": "chat.point.resize:hint" }
+                                    ]
+                                });
 
-                            system.run(() => {
-                                data.player.playSound("note.banjo")
-                            });
+                                system.run(() => {
+                                    data.player.playSound("note.banjo")
+                                });
 
+                            }
+                            else {
+                                sendNotification(data.player, "chat.point.resize:disallowed");
+                                system.run(() => {
+                                    data.player.playSound("note.didgeridoo")
+                                });
+                            }
                         }
-                        else {
-                            sendNotification(data.player, "chat.point.resize:disallowed");
+                    });
+
+                    if (!isResize) {
+                        data.player.sendMessage({
+                            "rawtext": [
+                                { "translate": "chat.prefix" },
+                                { "text": " " },
+                                { "translate": "chat.point.new:selected" },
+                                { "text": `: [§c${data.block.x}§r, §a${data.block.y}§r, §9${data.block.z}§r]\n` },
+                                { "translate": "chat.point.new:hint" }
+                            ]
+                        });
+
+                        system.run(() => {
+                            data.player.playSound("note.cow_bell")
+                        });
+                    }
+                }
+                // if player is crouching
+                else {
+                    var secondPoint = { "x": data.block.x, "y": data.block.y, "z": data.block.z };
+                    var intersectingClaim = false;
+
+                    // if claim is resized
+                    if (firstPoint["resizing-claim"].length > 0) {
+                        // make sure new claim isn't intersecting others not counting itself
+                        runInClaims((playerName, claimName, claim) => {
+                            if (doOverlap(claim["start"], claim["end"], firstPoint, secondPoint) && ((playerName != data.player.name) || (claimName != firstPoint["resizing-claim"]))) {
+                                intersectingClaim = true;
+                            }
+                        });
+
+                        if (intersectingClaim) {
+                            sendNotification(data.player, "chat.claim:intersecting")
+
                             system.run(() => {
                                 data.player.playSound("note.didgeridoo")
                             });
                         }
-                    }
-                });
+                        else {
+                            system.run(() => {
+                                data.player.playSound("note.cow_bell");
 
-                if (!isResize) {
-                    data.player.sendMessage({
-                        "rawtext": [
-                            { "translate": "chat.prefix" },
-                            { "text": " " },
-                            { "translate": "chat.point.new:selected" },
-                            { "text": `: [§c${data.block.x}§r, §a${data.block.y}§r, §9${data.block.z}§r]\n` },
-                            { "translate": "chat.point.new:hint" }
-                        ]
-                    });
-
-                    system.run(() => {
-                        data.player.playSound("note.cow_bell")
-                    });
-                }
-            }
-            // if player is crouching
-            else {
-                var secondPoint = { "x": data.block.x, "y": data.block.y, "z": data.block.z };
-                var intersectingClaim = false;
-
-                // if claim is resized
-                if (firstPoint["resizing-claim"].length > 0) {
-                    // make sure new claim isn't intersecting others not counting itself
-                    runInClaims((playerName, claimName, claim) => {
-                        if (doOverlap(claim["start"], claim["end"], firstPoint, secondPoint) && ((playerName != data.player.name) || (claimName != firstPoint["resizing-claim"]))) {
-                            intersectingClaim = true;
+                                Ui.resizeClaim(data.player, firstPoint["resizing-claim"], firstPoint["opposite-corner"], secondPoint);
+                            });
                         }
-                    });
-
-                    if (intersectingClaim) {
-                        sendNotification(data.player, "chat.claim:intersecting")
-
-                        system.run(() => {
-                            data.player.playSound("note.didgeridoo")
-                        });
                     }
                     else {
-                        system.run(() => {
-                            data.player.playSound("note.cow_bell");
 
-                            Ui.resizeClaim(data.player, firstPoint["resizing-claim"], firstPoint["opposite-corner"], secondPoint);
+                        // make sure new claim isn't intersecting others
+                        runInClaims((playerName, claimName, claim) => {
+                            if (doOverlap(claim["start"], claim["end"], firstPoint, secondPoint)) {
+                                intersectingClaim = true;
+                            }
                         });
-                    }
-                }
-                else {
 
-                    // make sure new claim isn't intersecting others
-                    runInClaims((playerName, claimName, claim) => {
-                        if (doOverlap(claim["start"], claim["end"], firstPoint, secondPoint)) {
-                            intersectingClaim = true;
+                        if (intersectingClaim) {
+                            sendNotification(data.player, "chat.claim:intersecting")
+
+                            system.run(() => {
+                                data.player.playSound("note.didgeridoo")
+                            });
                         }
-                    });
+                        else {
+                            system.run(() => {
+                                data.player.playSound("note.cow_bell");
 
-                    if (intersectingClaim) {
-                        sendNotification(data.player, "chat.claim:intersecting")
-
-                        system.run(() => {
-                            data.player.playSound("note.didgeridoo")
-                        });
+                                Ui.newClaim(data.player, { ...firstPoint }, secondPoint);
+                            });
+                        }
                     }
-                    else {
-                        system.run(() => {
-                            data.player.playSound("note.cow_bell");
 
-                            Ui.newClaim(data.player, { ...firstPoint }, secondPoint);
-                        });
-                    }
                 }
-
             }
 
             // save changes to the database
@@ -1134,7 +1143,7 @@ system.runInterval(() => {
     for (var e of world.getDimension("overworld").getEntities()) {
         runInClaims((playerName, claimName, claim) => {
             if (doOverlap(claim["start"], claim["end"], e.location, e.location)) {
-                if (e.typeId == "minecraft:small_fireball" || e.typeId == "minecraft:wither") {
+                if (e.typeId == "minecraft:small_fireball" || e.typeId == "minecraft:wither" || e.typeId == "minecraft:wind_charge_projectile") {
                     e.remove();
                 }
             }

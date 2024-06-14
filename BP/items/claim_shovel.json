@@ -23,6 +23,10 @@
       },
       "minecraft:icon": {
         "texture": "lca_claim_shovel"
+      },
+      "minecraft:cooldown": {
+        "category": "land_shovel_use",
+        "duration": 1
       }
     }
   }
