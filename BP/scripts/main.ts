@@ -1144,7 +1144,7 @@ system.runInterval(() => {
     for (var e of world.getDimension("overworld").getEntities()) {
         runInClaims((playerName, claimName, claim) => {
             if (doOverlap(claim["start"], claim["end"], e.location, e.location)) {
-                if (e.typeId == "minecraft:small_fireball" || e.typeId == "minecraft:wither" || e.typeId == "minecraft:wind_charge_projectile") {
+                if (e.typeId == "minecraft:small_fireball" || e.typeId == "minecraft:wither") {
                     e.remove();
                 }
             }
