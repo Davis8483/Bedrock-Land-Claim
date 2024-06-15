@@ -1186,9 +1186,11 @@ system.runInterval(() => {
                     }
 
                     // if player is not allowed in claim, apply knockback to remove them
-                    if (!hasPermission(claim, "enter-claim")) {
+                    if ((playerName != p.name) && (!hasPermission(claim, "enter-claim"))) {
                         const velocity = p.getVelocity();
+
                         p.applyKnockback(-velocity.x, -velocity.z, 3, 0.5);
+                        p.addEffect("wither", 40)
 
                         sendNotification(p, "chat.claim.permission:enter_claim");
                         p.playSound("note.didgeridoo");
