@@ -1184,6 +1184,15 @@ system.runInterval(() => {
                                 ]
                             });
                     }
+
+                    // if player is not allowed in claim, apply knockback to remove them
+                    if (!hasPermission(claim, "enter-claim")) {
+                        const velocity = p.getVelocity();
+                        p.applyKnockback(-velocity.x, -velocity.z, 3, 0.5);
+
+                        sendNotification(p, "chat.claim.permission:enter_claim");
+                        p.playSound("note.didgeridoo");
+                    }
                 }
             });
 
