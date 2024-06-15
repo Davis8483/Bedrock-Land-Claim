@@ -1,4 +1,4 @@
-import { world, system, Player, Vector3, ItemStack, CameraFadeOptions, CameraSetPosOptions, EasingType } from '@minecraft/server';
+import { world, system, Player, Vector3, ItemStack, CameraFadeOptions, CameraSetPosOptions, EasingType, EntityRidingComponent, EntityRideableComponent } from '@minecraft/server';
 import { ActionFormData, MessageFormData, ModalFormData } from '@minecraft/server-ui';
 
 const shovelID = "lca:claim_shovel"
@@ -26,6 +26,11 @@ const dbPlayerDefault = {
             "y": 0,
             "z": 0
         }
+    },
+    "entrance-velocity": {
+        "x": 0,
+        "y": 0,
+        "z": 0
     },
     "claims": {}
 }
@@ -815,7 +820,6 @@ world.beforeEvents.itemUseOn.subscribe((data) => {
 
 // Set/adjust claim points if player is sneaking
 world.beforeEvents.playerBreakBlock.subscribe((data) => {
-    world.sendMessage(world.getDynamicPropertyIds())
     // handle creating claims by setting first and second point
     if ((data.itemStack != undefined) && (data.itemStack.typeId == shovelID)) {
         // stop the shovel from breaking the block
@@ -1194,13 +1198,30 @@ system.runInterval(() => {
 
                     // if player is not allowed in claim, apply knockback to remove them
                     if ((playerName != p.name) && (!hasPermission(claim, "enter-claim"))) {
-                        const velocity = p.getVelocity();
+                        // player has entered claim
+                        if (!inClaimOld && database[p.name]["in-claim"]) {
+
+                            // send player a notification
+                            sendNotification(p, "chat.claim.permission:enter_claim");
+                            p.playSound("note.didgeridoo");
+
+                            // save entrance velocity
+                            database[p.name]["entrance-velocity"] = p.getVelocity();
+                        }
+
+                        const velocity: Vector3 = database[p.name]["entrance-velocity"];
+
+                        // if player is riding an entity eject them
+                        if (p.hasComponent(EntityRidingComponent.componentId)) {
+                            const ridingComponent = p.getComponent(EntityRidingComponent.componentId) as EntityRidingComponent;
+                            const riddenComponent = ridingComponent.entityRidingOn.getComponent(EntityRideableComponent.componentId) as EntityRideableComponent;
+
+                            riddenComponent.ejectRider(p);
+                        }
 
                         p.applyKnockback(-velocity.x, -velocity.z, 3, 0.5);
                         p.addEffect("wither", 40)
 
-                        sendNotification(p, "chat.claim.permission:enter_claim");
-                        p.playSound("note.didgeridoo");
                     }
                 }
             });
@@ -1209,10 +1230,12 @@ system.runInterval(() => {
 
             // player has entered claim
             if (!inClaimOld && database[p.name]["in-claim"]) {
+                // play entrance sound
                 p.playSound("random.door_open")
             }
             // player has exited the claim
             else if (inClaimOld && !database[p.name]["in-claim"]) {
+                // play exit sound
                 p.playSound("random.door_close")
             }
         }
