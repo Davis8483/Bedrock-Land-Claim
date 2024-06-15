@@ -61,13 +61,16 @@ const dbClaimDefault = {
     }
 }
 
-// check if database property exsists
-if (!(world.getDynamicPropertyIds().includes("db"))) {
-    world.setDynamicProperty("db", "{}")
-}
+var database = {};
 
-// load the database property in a dict
-var database: {} = JSON.parse(world.getDynamicProperty("db").toString());
+// compile database into a dict
+for (var id of world.getDynamicPropertyIds()) {
+    const property = world.getDynamicProperty(id);
+
+    if (id.includes(".") && (id.split(".")[0] == "db")) {
+        database[id.split(".")[1]] = JSON.parse(property.toString());
+    }
+}
 
 // verify that database contains correct properties
 for (var player of Object.keys(database)) {
@@ -87,8 +90,11 @@ for (var player of Object.keys(database)) {
     }
 }
 
+// deconstruct database to save each players data as an individual property
 function saveDb() {
-    world.setDynamicProperty("db", JSON.stringify(database));
+    for (var playerName of Object.keys(database)) {
+        world.setDynamicProperty(`db.${playerName}`, JSON.stringify(database[playerName]));
+    }
 }
 
 function sendNotification(player: Player, langEntry: String) {
@@ -809,6 +815,7 @@ world.beforeEvents.itemUseOn.subscribe((data) => {
 
 // Set/adjust claim points if player is sneaking
 world.beforeEvents.playerBreakBlock.subscribe((data) => {
+    world.sendMessage(world.getDynamicPropertyIds())
     // handle creating claims by setting first and second point
     if ((data.itemStack != undefined) && (data.itemStack.typeId == shovelID)) {
         // stop the shovel from breaking the block
