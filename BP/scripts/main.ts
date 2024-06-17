@@ -1175,8 +1175,11 @@ system.runInterval(() => {
 
             runInClaims((playerName, claimName, claim) => {
 
+                // apply an offset to the player location to be more accurate with claim bounds
+                const location: Vector3 = { "x": p.location.x - 0.5, "y": p.location.y - 0.5, "z": p.location.z - 0.5 };
+
                 // if player is in the claim
-                if (doOverlap(claim["start"], claim["end"], p.location, p.location)) {
+                if (doOverlap(claim["start"], claim["end"], location, location)) {
 
                     database[p.name]["in-claim"] = true
 
