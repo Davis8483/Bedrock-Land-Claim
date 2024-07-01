@@ -1,4 +1,4 @@
-import { world, system, Player, Vector3, ItemStack, CameraFadeOptions, CameraSetPosOptions, EasingType, EntityRidingComponent, EntityRideableComponent } from '@minecraft/server';
+import { world, system, Player, Vector3, ItemStack, CameraFadeOptions, CameraSetPosOptions, EasingType, EntityRidingComponent, EntityRideableComponent, RawMessage } from '@minecraft/server';
 import { ActionFormData, MessageFormData, ModalFormData } from '@minecraft/server-ui';
 
 const shovelID = "lca:claim_shovel"
@@ -13,6 +13,27 @@ const claimIcons = {
     "ui.claim.icons:flowers": "textures/ui/icon_spring.png"
 };
 
+// load settings ----------------------------------------------------------------------------------------------------------
+const settingsDefault = {
+    "claim-block-hourly-payment": 100,
+    "starting-claim-blocks": 200,
+    "claim-minimum-width": 10
+}
+
+// make sure settings exist
+if (!world.getDynamicPropertyIds().includes("settings")) {
+    world.setDynamicProperty("settings", JSON.stringify(settingsDefault));
+}
+
+// load settings and make sure it contains necessary keys
+var settings = { ...settingsDefault, ...JSON.parse(world.getDynamicProperty("settings").toString()) }
+
+// provide a function for saving the setttings
+function saveSettings() {
+    world.setDynamicProperty("settings", JSON.stringify(settings));
+}
+
+// load database ----------------------------------------------------------------------------------------------------------
 const dbPlayerDefault = {
     "in-claim": false,
     "viewing-claim": false,
@@ -32,6 +53,8 @@ const dbPlayerDefault = {
         "y": 0,
         "z": 0
     },
+    "claim-blocks": settings["starting-claim-blocks"],
+    "claim-block-payment-time-remaining": 60,
     "claims": {}
 }
 
@@ -102,8 +125,21 @@ function saveDb() {
     }
 }
 
-function sendNotification(player: Player, langEntry: String) {
-    player.runCommandAsync(`tellraw @s {"rawtext":[{"translate":"chat.prefix"}, {"text":" "}, {"translate":"${langEntry}"}]}`);
+//----------------------------------------------------------------------------------------------------------------------------
+
+function sendNotification(player: Player, langEntry: string | RawMessage) {
+    var rawText: RawMessage[] = [{ "translate": "chat.prefix" }, { "text": " " }]
+
+    if (typeof langEntry == "string") {
+        rawText.push({ "translate": `${langEntry}` });
+    }
+    else {
+        for (var segment of langEntry.rawtext) {
+            rawText.push(segment);
+        }
+    }
+
+    player.runCommandAsync(`tellraw @s {"rawtext":${JSON.stringify(rawText)}}`);
 }
 
 // // Returns true if two claims (l1, r1) and (l2, r2) overlap 
@@ -199,6 +235,19 @@ class Ui {
 
         const form = new ActionFormData()
             .title("ui.main:title")
+            .body({
+                "rawtext": [
+                    { "translate": "ui.main:body.paragraph:1" },
+                    { "text": "\n\n" },
+                    { "translate": "ui.main:body.paragraph:2" },
+                    { "text": "\n\n" },
+                    { "translate": "ui.main:body.paragraph:3" },
+                    { "text": "\n\n" },
+                    { "translate": "ui.main:body.paragraph:4" }, { "text": ` §e${database[owner.name]["claim-blocks"]}§r ` },
+                    { "text": "\n\n" },
+                    { "translate": "ui.main:body.paragraph:5-1" }, { "text": ` §a+${settings["claim-block-hourly-payment"]}§r ` }, { "translate": "ui.main:body.paragraph:5-2" }, { "text": ` §9${database[owner.name]["claim-block-payment-time-remaining"]}§r ` }, { "translate": "ui.main:body.paragraph:5-3" }
+                ]
+            })
             .button("ui.main.button:manage", "textures/ui/icon_setting.png")
             .button("ui.main.button:close")
 
@@ -228,9 +277,11 @@ class Ui {
 
             if (!response.canceled) {
 
-                var name = response.formValues[0].toString();
-                var iconPath = claimIcons[Object.keys(claimIcons)[response.formValues[1].toString()]];
-                var showBorderParticles = response.formValues[2];
+                const name = response.formValues[0].toString();
+                const iconPath = claimIcons[Object.keys(claimIcons)[response.formValues[1].toString()]];
+                const showBorderParticles = response.formValues[2];
+                const claimWidth = Math.abs(start.x - end.x) + 1;
+                const claimLength = Math.abs(start.z - end.z) + 1;
 
                 if (name.length == 0) {
                     sendNotification(owner, "chat.claim:name_required")
@@ -240,8 +291,12 @@ class Ui {
                     sendNotification(owner, "chat.claim:use_unique_name")
                     owner.playSound("note.didgeridoo");
                 }
-
+                // passed all the checks, now make the claim
                 else {
+
+                    // subtract claim blocks
+                    database[owner.name]["claim-blocks"] -= (claimWidth * claimLength);
+
                     // generate dict for the new claim
                     claims[name] = Object.assign({}, dbClaimDefault);
 
@@ -263,9 +318,25 @@ class Ui {
     static resizeClaim(owner: Player, claimName: string, start: Vector3, end: Vector3) {
         var claims: {} = database[owner.name]["claims"];
 
+        const oldClaimWidth = Math.abs(claims[claimName]["start"]["x"] - claims[claimName]["end"]["x"]) + 1;
+        const oldClaimLength = Math.abs(claims[claimName]["start"]["z"] - claims[claimName]["end"]["z"]) + 1;
+
+        const newClaimWidth = Math.abs(start.x - end.x) + 1;
+        const newClaimLength = Math.abs(start.z - end.z) + 1;
+
+        const blockDifference = (oldClaimLength * oldClaimWidth) - (newClaimLength * newClaimWidth)
+
+
+
         const form = new MessageFormData()
             .title("ui.claim.resize:title")
-            .body("ui.claim.resize:body")
+            .body({
+                "rawtext": [
+                    { "translate": "ui.claim.resize:body" },
+                    { "text": `§l\n\n${blockDifference < 0 ? "§c-" : "§a+"}${blockDifference} ` },
+                    { "translate": "ui.manage.resize:label:claim_blocks" }
+                ]
+            })
             .button1("ui.claim.resize.button:cancel")
             .button2("ui.claim.resize.button:resize")
 
@@ -277,6 +348,9 @@ class Ui {
 
                 sendNotification(owner, "chat.claim:resized")
                 owner.playSound("random.levelup");
+
+                //add/subtract the blocks from players balance
+                database[owner.name]["claim-blocks"] += blockDifference
 
                 saveDb();
             }
@@ -291,13 +365,13 @@ class Ui {
 
         for (var c of Object.keys(claims)) {
 
-            var width = Math.abs(claims[c]["start"]["x"] - claims[c]["end"]["x"]);
-            var length = Math.abs(claims[c]["start"]["z"] - claims[c]["end"]["z"]);
+            var claimWidth = Math.abs(claims[c]["start"]["x"] - claims[c]["end"]["x"]) + 1;
+            var claimLength = Math.abs(claims[c]["start"]["z"] - claims[c]["end"]["z"]) + 1;
 
             form.button(
                 {
                     "rawtext": [
-                        { "text": `${c}§r\n§c${width}§8x§9${length} ` }
+                        { "text": `${c}§r\n§c${claimWidth}§8x§9${claimLength} ` }
                     ]
                 }, claims[c]["icon"]);
         }
@@ -338,7 +412,7 @@ class Ui {
             .button("ui.manage.button:public_permissions", "textures/ui/icon_multiplayer.png")
             .button("ui.manage.button:player_permissions", "textures/ui/icon_steve.png")
             .button("ui.manage.button:view", "textures/ui/magnifyingGlass.png")
-            .button("ui.manage.button:sell", "textures/ui/icon_trash.png")
+            .button("ui.manage.button:remove", "textures/ui/icon_trash.png")
             .button("ui.global.button:back")
 
         form.show(owner).then((response) => {
@@ -355,7 +429,7 @@ class Ui {
                 this.viewClaim(owner, claimName);
             }
             else if (response.selection == 4) {
-                this.sellClaim(owner, claimName);
+                this.removeClaim(owner, claimName);
             }
             else if (response.selection == 5) {
                 // return to previous menu
@@ -674,14 +748,23 @@ class Ui {
         }
     }
 
-    static sellClaim(owner: Player, claimName: string) {
+    static removeClaim(owner: Player, claimName: string) {
         var claims: {} = database[owner.name]["claims"];
 
+        var claimWidth = Math.abs(claims[claimName]["start"]["x"] - claims[claimName]["end"]["x"]) + 1;
+        var claimLength = Math.abs(claims[claimName]["start"]["z"] - claims[claimName]["end"]["z"]) + 1;
+
         const form = new MessageFormData()
-            .title(claimName)
-            .body("ui.manage.sell:body")
-            .button1("ui.manage.sell.button:cancel")
-            .button2("ui.manage.sell.button:confirm")
+            .title("ui.manage.remove:title")
+            .body({
+                "rawtext": [
+                    { "translate": "ui.manage.remove:body" },
+                    { "text": `§l\n\n§a+${claimWidth * claimLength} ` },
+                    { "translate": "ui.manage.remove:label:claim_blocks" }
+                ]
+            })
+            .button1("ui.manage.remove.button:cancel")
+            .button2("ui.manage.remove.button:confirm")
 
         form.show(owner).then((response) => {
             // if deletion canceled
@@ -694,8 +777,11 @@ class Ui {
 
                 // delete claim
                 delete claims[claimName];
-                sendNotification(owner, "chat.claim:sold")
+                sendNotification(owner, "chat.claim:removed")
                 owner.playSound("mob.creeper.say");
+
+                // add the claim blocks to the players balance
+                database[owner.name]["claim-blocks"] += claimWidth * claimLength
 
                 saveDb();
             }
@@ -925,6 +1011,17 @@ world.beforeEvents.playerBreakBlock.subscribe((data) => {
 
                     // if claim is resized
                     if (firstPoint["resizing-claim"].length > 0) {
+
+                        var claims: {} = database[data.player.name]["claims"];
+
+                        const oldClaimWidth = Math.abs(claims[firstPoint["resizing-claim"]]["start"]["x"] - claims[firstPoint["resizing-claim"]]["end"]["x"]) + 1;
+                        const oldClaimLength = Math.abs(claims[firstPoint["resizing-claim"]]["start"]["z"] - claims[firstPoint["resizing-claim"]]["end"]["z"]) + 1;
+
+                        const newClaimWidth = Math.abs(firstPoint["opposite-corner"]["x"] - secondPoint.x) + 1;
+                        const newClaimLength = Math.abs(firstPoint["opposite-corner"]["z"] - secondPoint.z) + 1;
+
+                        const blockDifference = (newClaimLength * newClaimWidth) - (oldClaimLength * oldClaimWidth)
+
                         // make sure new claim isn't intersecting others not counting itself
                         runInClaims((playerName, claimName, claim) => {
                             if (doOverlap(claim["start"], claim["end"], firstPoint, secondPoint) && ((playerName != data.player.name) || (claimName != firstPoint["resizing-claim"]))) {
@@ -939,6 +1036,18 @@ world.beforeEvents.playerBreakBlock.subscribe((data) => {
                                 data.player.playSound("note.didgeridoo")
                             });
                         }
+                        else if (newClaimWidth < settings["claim-minimum-width"] || newClaimLength < settings["claim-minimum-width"]) {
+                            sendNotification(data.player, { "rawtext": [{ "translate": "chat.claim:width1" }, { "text": ` ${settings["claim-minimum-width"]} ` }, { "translate": "chat.claim:width2" }] });
+                            system.run(() => {
+                                data.player.playSound("note.didgeridoo")
+                            });
+                        }
+                        else if (database[data.player.name]["claim-blocks"] < blockDifference) {
+                            sendNotification(data.player, { "rawtext": [{ "translate": "chat.claim:blocks1" }, { "text": ` ${(blockDifference) - database[data.player.name]["claim-blocks"]} ` }, { "translate": "chat.claim:blocks3" }] });
+                            system.run(() => {
+                                data.player.playSound("note.didgeridoo")
+                            });
+                        }
                         else {
                             system.run(() => {
                                 data.player.playSound("note.cow_bell");
@@ -948,6 +1057,9 @@ world.beforeEvents.playerBreakBlock.subscribe((data) => {
                         }
                     }
                     else {
+
+                        const claimWidth = Math.abs(firstPoint.x - secondPoint.x) + 1;
+                        const claimLength = Math.abs(firstPoint.z - secondPoint.z) + 1;
 
                         // make sure new claim isn't intersecting others
                         runInClaims((playerName, claimName, claim) => {
@@ -959,6 +1071,18 @@ world.beforeEvents.playerBreakBlock.subscribe((data) => {
                         if (intersectingClaim) {
                             sendNotification(data.player, "chat.claim:intersecting")
 
+                            system.run(() => {
+                                data.player.playSound("note.didgeridoo")
+                            });
+                        }
+                        else if (claimWidth < settings["claim-minimum-width"] || claimLength < settings["claim-minimum-width"]) {
+                            sendNotification(data.player, { "rawtext": [{ "translate": "chat.claim:width1" }, { "text": ` ${settings["claim-minimum-width"]} ` }, { "translate": "chat.claim:width2" }] });
+                            system.run(() => {
+                                data.player.playSound("note.didgeridoo")
+                            });
+                        }
+                        else if (database[data.player.name]["claim-blocks"] < (claimWidth * claimLength)) {
+                            sendNotification(data.player, { "rawtext": [{ "translate": "chat.claim:blocks1" }, { "text": ` ${(claimWidth * claimLength) - database[data.player.name]["claim-blocks"]} ` }, { "translate": "chat.claim:blocks2" }] });
                             system.run(() => {
                                 data.player.playSound("note.didgeridoo")
                             });
@@ -1316,3 +1440,25 @@ system.runInterval(() => {
     });
 }, 20);
 
+// every minute decrement each online players time remaining until they recieve more claim blocks
+system.runInterval(() => {
+    for (var p of world.getAllPlayers()) {
+        // decrement by 1
+        database[p.name]["claim-block-payment-time-remaining"] -= 1;
+
+        // if time is up reward blocks and reset timer
+        if (database[p.name]["claim-block-payment-time-remaining"] <= 0) {
+            database[p.name]["claim-blocks"] += settings["claim-block-hourly-payment"];
+            sendNotification(p, {
+                "rawtext": [
+                    { "translate": "chat.blocks:payment1" },
+                    { "text": ` ${settings["claim-block-hourly-payment"]} ` },
+                    { "translate": "chat.blocks:payment2" }]
+            })
+            p.playSound("random.levelup");
+
+            database[p.name]["claim-block-payment-time-remaining"] = 60;
+        }
+    }
+    saveDb();
+}, 1200)

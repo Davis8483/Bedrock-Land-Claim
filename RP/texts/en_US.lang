@@ -10,8 +10,13 @@ chat.claim:name_required=§cYou must provide a name!§r
 chat.claim:use_unique_name=§cYou can't use the name of an existing claim!§r
 chat.claim:created=§aClaim created!§r
 chat.claim:no_claims=§cYou don't have any claims!§r
-chat.claim:sold=§cClaim sold.§r
+chat.claim:removed=§cClaim removed.§r
 chat.claim:intersecting=§cA claim is already here!§r
+chat.claim:width1=§cYou're claim must be at least§r
+chat.claim:width2=§cblocks wide!§r
+chat.claim:blocks1=§cYou need§r
+chat.claim:blocks2=§cmore block(s) to create this claim!§r
+chat.claim:blocks3=§cmore block(s) to resize this claim!§r
 chat.claim:updated=§aClaim config has been saved!§r
 chat.claim:resized=§aClaim has been resized!§r
 chat.claim:permissions_updated=§aClaim permissions have been updated!§r
@@ -32,9 +37,19 @@ chat.claim.permission:enter_claim=§cYou're not allowed to enter this claim!§r
 chat.claim:view=§cYou can only view a claim from the overworld!§r
 chat.claim:piston=§cYou can't use a piston from outside this claim!§r
 
+chat.blocks:payment1=§aYou've recieved your hourly payment of§r
+chat.blocks:payment2=§ablocks!§r
+
 ui.global.button:back=Back
 
-ui.main:title=Land Claim Menu
+ui.main:title=§5Shovel§r Land Claim
+ui.main:body.paragraph:1=Welcome to Land Claim!
+ui.main:body.paragraph:2=§bCreate a claim§r by breaking two opposite corners.
+ui.main:body.paragraph:3=§dResize a claim§r by breaking any corner and specifying a new one.
+ui.main:body.paragraph:4=§l§6Claim Block Balance§r:
+ui.main:body.paragraph:5-1=§oYou will recieve
+ui.main:body.paragraph:5-2=§omore in
+ui.main:body.paragraph:5-3=§ominutes.
 ui.main.button:manage=Manage Claims
 ui.main.button:close=Close
 
@@ -45,11 +60,13 @@ ui.manage.button:config=Config
 ui.manage.button:public_permissions=Public Permissions
 ui.manage.button:player_permissions=Player Permissions
 ui.manage.button:view=View Claim
-ui.manage.button:sell=§cSell Claim§r
+ui.manage.button:remove=§cRemove Claim§r
 
-ui.manage.sell:body=Are you sure you want to sell this claim? This action cannot be undone.
-ui.manage.sell.button:confirm=§cSell Claim§r
-ui.manage.sell.button:cancel=Cancel
+ui.manage.remove:title=Remove Claim
+ui.manage.remove:body=Are you sure you want to remove this claim? The blocks will be returned to your balance.
+ui.manage.remove:label:claim_blocks=§6Claim Blocks§r
+ui.manage.remove.button:confirm=§cRemove Claim§r
+ui.manage.remove.button:cancel=Cancel
 
 ui.manage.config:title=Claim Config
 
@@ -75,7 +92,8 @@ ui.manage.view:loading=Loading...
 ui.claim.new:title=New Claim
 
 ui.claim.resize:title=Resize Claim
-ui.claim.resize:body=Are you sure you want to resize this claim?
+ui.claim.resize:body=Are you sure you want to resize this claim? The blocks will be added/subtracted from your balance.
+ui.manage.resize:label:claim_blocks=§6Claim Blocks§r
 ui.claim.resize.button:cancel=Cancel
 ui.claim.resize.button:resize=§dResize Claim§r
 
